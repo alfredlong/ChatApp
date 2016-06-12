@@ -6,10 +6,20 @@
 package chatapp;
 
 import java.awt.CardLayout;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.StyledDocument;
 
 /**
  *
@@ -26,12 +36,27 @@ public class ClientGUI extends javax.swing.JFrame {
     /**
      * Creates new form MainScreen
      */
+    
+    private ImageIcon getImage(String path, int width, int height) {
+        return new ImageIcon(new ImageIcon(getClass()
+                .getResource(path))
+                .getImage()
+                .getScaledInstance(width, height, Image.SCALE_SMOOTH));
+    }
+    
     public ClientGUI(String host, int port) {
         defaultHost = host;
         defaultPort = port;
-        
         this.setResizable(false);
+        
         initComponents();
+        
+        lblLogo.setIcon(getImage("/chatapp/res/logo.jpg",
+                lblLogo.getWidth(),
+                lblLogo.getHeight()));
+        lblYourAvatar.setIcon(getImage("/chatapp/res/avatar.png",
+                lblYourAvatar.getWidth(),
+                lblYourAvatar.getHeight()));
     }
 
     /**
@@ -43,7 +68,6 @@ public class ClientGUI extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        btnLogout = new javax.swing.JButton();
         FramePanel = new javax.swing.JPanel();
         LoginScreen = new javax.swing.JPanel();
         LogoPanel = new javax.swing.JPanel();
@@ -52,32 +76,35 @@ public class ClientGUI extends javax.swing.JFrame {
         LoginArea = new javax.swing.JPanel();
         btnLogin = new javax.swing.JButton();
         btnRegister = new javax.swing.JButton();
-        txtPassword = new javax.swing.JTextField();
         txtUsername = new javax.swing.JTextField();
         lblUsername = new javax.swing.JLabel();
         lblPassword = new javax.swing.JLabel();
+        txtPassword = new javax.swing.JPasswordField();
         MainScreen = new javax.swing.JPanel();
         jSplitPane2 = new javax.swing.JSplitPane();
         LeftFrame = new javax.swing.JPanel();
         StatusPane = new javax.swing.JPanel();
-        jButton1 = new javax.swing.JButton();
+        lblYourAvatar = new javax.swing.JLabel();
+        lblYourName = new javax.swing.JLabel();
+        lblYourStatus = new javax.swing.JLabel();
+        btnChangeStatus = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         FriendList = new javax.swing.JList<>();
         RightFrame = new javax.swing.JPanel();
         ActionPane = new javax.swing.JPanel();
-        jButton2 = new javax.swing.JButton();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        ChatArea = new javax.swing.JTextArea();
+        Members = new javax.swing.JPanel();
+        Actions = new javax.swing.JPanel();
+        btnStream = new javax.swing.JButton();
+        btnCreateGroup = new javax.swing.JButton();
+        btnLogout = new javax.swing.JButton();
         InputPanel = new javax.swing.JPanel();
         txtInput = new javax.swing.JTextField();
+        SendFuncs = new javax.swing.JPanel();
+        btnFile = new javax.swing.JButton();
+        btnImage = new javax.swing.JButton();
         btnSend = new javax.swing.JButton();
-
-        btnLogout.setText("Log out");
-        btnLogout.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnLogoutActionPerformed(evt);
-            }
-        });
+        jScrollPane3 = new javax.swing.JScrollPane();
+        ChatArea = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -87,8 +114,6 @@ public class ClientGUI extends javax.swing.JFrame {
         LoginScreen.setLayout(new java.awt.BorderLayout());
 
         LogoPanel.setPreferredSize(new java.awt.Dimension(400, 500));
-
-        lblLogo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/chatapp/logo.jpg"))); // NOI18N
 
         javax.swing.GroupLayout LogoPanelLayout = new javax.swing.GroupLayout(LogoPanel);
         LogoPanel.setLayout(LogoPanelLayout);
@@ -103,8 +128,8 @@ public class ClientGUI extends javax.swing.JFrame {
             LogoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(LogoPanelLayout.createSequentialGroup()
                 .addGap(63, 63, 63)
-                .addComponent(lblLogo)
-                .addContainerGap(127, Short.MAX_VALUE))
+                .addComponent(lblLogo, javax.swing.GroupLayout.PREFERRED_SIZE, 306, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(131, Short.MAX_VALUE))
         );
 
         LoginScreen.add(LogoPanel, java.awt.BorderLayout.LINE_START);
@@ -128,8 +153,6 @@ public class ClientGUI extends javax.swing.JFrame {
             }
         });
 
-        txtPassword.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-
         txtUsername.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
 
         lblUsername.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
@@ -138,29 +161,35 @@ public class ClientGUI extends javax.swing.JFrame {
         lblPassword.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
         lblPassword.setText("Password:");
 
+        txtPassword.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+
         javax.swing.GroupLayout LoginAreaLayout = new javax.swing.GroupLayout(LoginArea);
         LoginArea.setLayout(LoginAreaLayout);
         LoginAreaLayout.setHorizontalGroup(
             LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 230, Short.MAX_VALUE)
+            .addGroup(LoginAreaLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 210, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(LoginAreaLayout.createSequentialGroup()
                     .addContainerGap()
                     .addGroup(LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addComponent(lblPassword)
                         .addComponent(lblUsername)
-                        .addGroup(LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(txtPassword)
-                            .addGroup(LoginAreaLayout.createSequentialGroup()
-                                .addComponent(btnLogin, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnRegister, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(txtUsername, javax.swing.GroupLayout.PREFERRED_SIZE, 210, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(LoginAreaLayout.createSequentialGroup()
+                            .addComponent(btnLogin, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(btnRegister, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(txtUsername, javax.swing.GroupLayout.PREFERRED_SIZE, 210, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
         LoginAreaLayout.setVerticalGroup(
             LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 194, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LoginAreaLayout.createSequentialGroup()
+                .addContainerGap(93, Short.MAX_VALUE)
+                .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(71, 71, 71))
             .addGroup(LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(LoginAreaLayout.createSequentialGroup()
                     .addContainerGap()
@@ -169,9 +198,7 @@ public class ClientGUI extends javax.swing.JFrame {
                     .addComponent(txtUsername, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGap(18, 18, 18)
                     .addComponent(lblPassword)
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                    .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(34, 34, 34)
+                    .addGap(63, 63, 63)
                     .addGroup(LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(btnRegister, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(btnLogin, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -192,12 +219,27 @@ public class ClientGUI extends javax.swing.JFrame {
 
         LeftFrame.setLayout(new java.awt.BorderLayout());
 
+        StatusPane.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         StatusPane.setMaximumSize(new java.awt.Dimension(100, 100));
         StatusPane.setPreferredSize(new java.awt.Dimension(100, 100));
-        StatusPane.setLayout(new java.awt.BorderLayout());
+        StatusPane.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jButton1.setText("jButton1");
-        StatusPane.add(jButton1, java.awt.BorderLayout.CENTER);
+        lblYourAvatar.setText("Image");
+        StatusPane.add(lblYourAvatar, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 10, 60, 60));
+
+        lblYourName.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
+        lblYourName.setText("Your name");
+        StatusPane.add(lblYourName, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 20, -1, -1));
+
+        lblYourStatus.setText("Current status");
+        StatusPane.add(lblYourStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 40, -1, -1));
+
+        btnChangeStatus.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
+        btnChangeStatus.setText("Change");
+        btnChangeStatus.setMaximumSize(new java.awt.Dimension(55, 20));
+        btnChangeStatus.setMinimumSize(new java.awt.Dimension(55, 20));
+        btnChangeStatus.setPreferredSize(new java.awt.Dimension(55, 20));
+        StatusPane.add(btnChangeStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 60, 70, -1));
 
         LeftFrame.add(StatusPane, java.awt.BorderLayout.PAGE_START);
 
@@ -214,31 +256,93 @@ public class ClientGUI extends javax.swing.JFrame {
 
         RightFrame.setLayout(new java.awt.BorderLayout());
 
+        ActionPane.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         ActionPane.setMaximumSize(new java.awt.Dimension(100, 100));
         ActionPane.setPreferredSize(new java.awt.Dimension(100, 100));
         ActionPane.setLayout(new java.awt.BorderLayout());
 
-        jButton2.setText("jButton1");
-        ActionPane.add(jButton2, java.awt.BorderLayout.CENTER);
+        javax.swing.GroupLayout MembersLayout = new javax.swing.GroupLayout(Members);
+        Members.setLayout(MembersLayout);
+        MembersLayout.setHorizontalGroup(
+            MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        MembersLayout.setVerticalGroup(
+            MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
+        ActionPane.add(Members, java.awt.BorderLayout.CENTER);
+
+        Actions.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 5, 1, 5));
+        Actions.setLayout(new javax.swing.BoxLayout(Actions, javax.swing.BoxLayout.LINE_AXIS));
+
+        btnStream.setText("Stream");
+        btnStream.setMaximumSize(new java.awt.Dimension(68, 70));
+        btnStream.setMinimumSize(new java.awt.Dimension(70, 70));
+        btnStream.setOpaque(false);
+        btnStream.setPreferredSize(new java.awt.Dimension(70, 70));
+        Actions.add(btnStream);
+
+        btnCreateGroup.setLabel("<html>Create<br />Group</html>");
+        btnCreateGroup.setMaximumSize(new java.awt.Dimension(68, 70));
+        btnCreateGroup.setMinimumSize(new java.awt.Dimension(70, 70));
+        btnCreateGroup.setPreferredSize(new java.awt.Dimension(70, 70));
+        Actions.add(btnCreateGroup);
+
+        btnLogout.setLabel("<html>Log<br/>Out</html>");
+        btnLogout.setMaximumSize(new java.awt.Dimension(68, 70));
+        btnLogout.setMinimumSize(new java.awt.Dimension(70, 70));
+        btnLogout.setPreferredSize(new java.awt.Dimension(70, 70));
+        btnLogout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLogoutActionPerformed(evt);
+            }
+        });
+        Actions.add(btnLogout);
+
+        ActionPane.add(Actions, java.awt.BorderLayout.EAST);
 
         RightFrame.add(ActionPane, java.awt.BorderLayout.PAGE_START);
-
-        ChatArea.setColumns(20);
-        ChatArea.setRows(5);
-        jScrollPane2.setViewportView(ChatArea);
-
-        RightFrame.add(jScrollPane2, java.awt.BorderLayout.CENTER);
 
         InputPanel.setLayout(new java.awt.BorderLayout());
         InputPanel.add(txtInput, java.awt.BorderLayout.CENTER);
 
+        SendFuncs.setMaximumSize(new java.awt.Dimension(189, 23));
+        SendFuncs.setMinimumSize(new java.awt.Dimension(189, 23));
+        SendFuncs.setPreferredSize(new java.awt.Dimension(189, 23));
+        SendFuncs.setLayout(new javax.swing.BoxLayout(SendFuncs, javax.swing.BoxLayout.LINE_AXIS));
+
+        btnFile.setText("File");
+        btnFile.setMaximumSize(new java.awt.Dimension(63, 27));
+        btnFile.setMinimumSize(new java.awt.Dimension(63, 27));
+        btnFile.setPreferredSize(new java.awt.Dimension(63, 27));
+        SendFuncs.add(btnFile);
+
+        btnImage.setText("Image");
+        btnImage.setMaximumSize(new java.awt.Dimension(63, 27));
+        btnImage.setMinimumSize(new java.awt.Dimension(63, 27));
+        btnImage.setPreferredSize(new java.awt.Dimension(63, 27));
+        SendFuncs.add(btnImage);
+
         btnSend.setLabel("Send");
-        btnSend.setMaximumSize(new java.awt.Dimension(63, 23));
-        btnSend.setMinimumSize(new java.awt.Dimension(63, 23));
-        btnSend.setPreferredSize(new java.awt.Dimension(63, 23));
-        InputPanel.add(btnSend, java.awt.BorderLayout.LINE_END);
+        btnSend.setMaximumSize(new java.awt.Dimension(63, 27));
+        btnSend.setMinimumSize(new java.awt.Dimension(63, 27));
+        btnSend.setPreferredSize(new java.awt.Dimension(63, 27));
+        btnSend.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSendActionPerformed(evt);
+            }
+        });
+        SendFuncs.add(btnSend);
+
+        InputPanel.add(SendFuncs, java.awt.BorderLayout.LINE_END);
 
         RightFrame.add(InputPanel, java.awt.BorderLayout.PAGE_END);
+
+        jScrollPane3.setViewportView(ChatArea);
+
+        RightFrame.add(jScrollPane3, java.awt.BorderLayout.CENTER);
 
         jSplitPane2.setRightComponent(RightFrame);
 
@@ -252,8 +356,12 @@ public class ClientGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     void append(String str) {
-        ChatArea.append(str);
-        ChatArea.setCaretPosition(ChatArea.getText().length() - 1);
+        StyledDocument document = (StyledDocument) ChatArea.getDocument();
+        try {
+            document.insertString(document.getLength(), str, null);
+        } catch (BadLocationException ex) {
+            Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     void connectionFailed() {
@@ -284,14 +392,24 @@ public class ClientGUI extends javax.swing.JFrame {
         return true;
     }
     
+    private void resetAll() {
+        txtInput.setText("");
+        ChatArea.setText("");
+    }
+    private String PassToStr(char[] pass) {
+        String str = "";
+        for (int i = 0; i < pass.length; i++)
+            str += pass[i];
+        return str;
+    }
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         String username = txtUsername.getText().trim();
-        String password = txtPassword.getText().trim();
+        String password = PassToStr(txtPassword.getPassword()).trim();
              
         if (checkValid(username, password)) {
-            client = new Client(defaultHost, defaultPort, username, password);
-            if(!client.start())
-                return;
+//            client = new Client(defaultHost, defaultPort, username, password);
+//            if(!client.start())
+//                return;
 
             CardLayout card = (CardLayout) FramePanel.getLayout();
             card.show(FramePanel, "card2");
@@ -301,7 +419,7 @@ public class ClientGUI extends javax.swing.JFrame {
 
     private void btnRegisterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegisterActionPerformed
         String username = txtUsername.getText().trim();
-        String password = txtPassword.getText().trim();
+        String password = PassToStr(txtPassword.getPassword()).trim();
         
         if (checkValid(username, password)) {
             
@@ -309,9 +427,20 @@ public class ClientGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnRegisterActionPerformed
 
     private void btnLogoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogoutActionPerformed
+        //client.sendMessage(new ChatMessage(ChatMessage.LOGOUT, ""));
+        resetAll();
         CardLayout card = (CardLayout) FramePanel.getLayout();
         card.show(FramePanel, "card1");
     }//GEN-LAST:event_btnLogoutActionPerformed
+
+    private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
+        append(txtInput.getText() + "\n");
+        txtInput.setText("");
+//        if (connected) {
+//            client.sendMessage(new ChatMessage(ChatMessage.MESSAGE, txtInput.getText()));            
+//            txtInput.setText("");
+//        }
+    }//GEN-LAST:event_btnSendActionPerformed
 
     /**
      * @param args the command line arguments
@@ -359,7 +488,8 @@ public class ClientGUI extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ActionPane;
-    private javax.swing.JTextArea ChatArea;
+    private javax.swing.JPanel Actions;
+    private javax.swing.JTextPane ChatArea;
     private javax.swing.JPanel FramePanel;
     private javax.swing.JList<String> FriendList;
     private javax.swing.JPanel InputPanel;
@@ -369,22 +499,30 @@ public class ClientGUI extends javax.swing.JFrame {
     private javax.swing.JPanel LoginScreen;
     private javax.swing.JPanel LogoPanel;
     private javax.swing.JPanel MainScreen;
+    private javax.swing.JPanel Members;
     private javax.swing.JPanel RightFrame;
+    private javax.swing.JPanel SendFuncs;
     private javax.swing.JPanel StatusPane;
+    private javax.swing.JButton btnChangeStatus;
+    private javax.swing.JButton btnCreateGroup;
+    private javax.swing.JButton btnFile;
+    private javax.swing.JButton btnImage;
     private javax.swing.JButton btnLogin;
     private javax.swing.JButton btnLogout;
     private javax.swing.JButton btnRegister;
     private javax.swing.JButton btnSend;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton btnStream;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSplitPane jSplitPane2;
     private javax.swing.JLabel lblLogo;
     private javax.swing.JLabel lblPassword;
     private javax.swing.JLabel lblUsername;
+    private javax.swing.JLabel lblYourAvatar;
+    private javax.swing.JLabel lblYourName;
+    private javax.swing.JLabel lblYourStatus;
     private javax.swing.JTextField txtInput;
-    private javax.swing.JTextField txtPassword;
+    private javax.swing.JPasswordField txtPassword;
     private javax.swing.JTextField txtUsername;
     // End of variables declaration//GEN-END:variables
 
