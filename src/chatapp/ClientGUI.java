@@ -88,6 +88,10 @@ public class ClientGUI extends javax.swing.JFrame {
         lblYourName = new javax.swing.JLabel();
         lblYourStatus = new javax.swing.JLabel();
         btnChangeStatus = new javax.swing.JButton();
+        ListPane = new javax.swing.JPanel();
+        SearchPanel = new javax.swing.JPanel();
+        txtSearch = new javax.swing.JTextField();
+        btnSearch = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         FriendList = new javax.swing.JList<>();
         RightFrame = new javax.swing.JPanel();
@@ -243,116 +247,161 @@ public class ClientGUI extends javax.swing.JFrame {
 
         LeftFrame.add(StatusPane, java.awt.BorderLayout.PAGE_START);
 
-        FriendList.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
-        jScrollPane1.setViewportView(FriendList);
+        ListPane.setLayout(new java.awt.BorderLayout());
 
-        LeftFrame.add(jScrollPane1, java.awt.BorderLayout.CENTER);
+        SearchPanel.setLayout(new java.awt.BorderLayout());
+        SearchPanel.add(txtSearch, java.awt.BorderLayout.CENTER);
 
-        jSplitPane2.setLeftComponent(LeftFrame);
+        btnSearch.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
+        btnSearch.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+            .getResource("/chatapp/res/search.png"))
+        .getImage()
+        .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
+btnSearch.setMaximumSize(new java.awt.Dimension(30, 21));
+btnSearch.setMinimumSize(new java.awt.Dimension(30, 21));
+btnSearch.setPreferredSize(new java.awt.Dimension(30, 21));
+SearchPanel.add(btnSearch, java.awt.BorderLayout.EAST);
 
-        RightFrame.setLayout(new java.awt.BorderLayout());
+ListPane.add(SearchPanel, java.awt.BorderLayout.PAGE_START);
 
-        ActionPane.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        ActionPane.setMaximumSize(new java.awt.Dimension(100, 100));
-        ActionPane.setPreferredSize(new java.awt.Dimension(100, 100));
-        ActionPane.setLayout(new java.awt.BorderLayout());
+FriendList.setModel(new javax.swing.AbstractListModel<String>() {
+    String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+    public int getSize() { return strings.length; }
+    public String getElementAt(int i) { return strings[i]; }
+    });
+    jScrollPane1.setViewportView(FriendList);
 
-        javax.swing.GroupLayout MembersLayout = new javax.swing.GroupLayout(Members);
-        Members.setLayout(MembersLayout);
-        MembersLayout.setHorizontalGroup(
-            MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
-        MembersLayout.setVerticalGroup(
-            MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
+    ListPane.add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
-        ActionPane.add(Members, java.awt.BorderLayout.CENTER);
+    LeftFrame.add(ListPane, java.awt.BorderLayout.CENTER);
 
-        Actions.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 5, 1, 5));
-        Actions.setLayout(new javax.swing.BoxLayout(Actions, javax.swing.BoxLayout.LINE_AXIS));
+    jSplitPane2.setLeftComponent(LeftFrame);
 
-        btnStream.setText("Stream");
-        btnStream.setMaximumSize(new java.awt.Dimension(68, 70));
-        btnStream.setMinimumSize(new java.awt.Dimension(70, 70));
-        btnStream.setOpaque(false);
-        btnStream.setPreferredSize(new java.awt.Dimension(70, 70));
-        Actions.add(btnStream);
+    RightFrame.setLayout(new java.awt.BorderLayout());
 
-        btnCreateGroup.setLabel("<html>Create<br />Group</html>");
-        btnCreateGroup.setMaximumSize(new java.awt.Dimension(68, 70));
-        btnCreateGroup.setMinimumSize(new java.awt.Dimension(70, 70));
-        btnCreateGroup.setPreferredSize(new java.awt.Dimension(70, 70));
-        Actions.add(btnCreateGroup);
+    ActionPane.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+    ActionPane.setMaximumSize(new java.awt.Dimension(100, 100));
+    ActionPane.setPreferredSize(new java.awt.Dimension(100, 100));
+    ActionPane.setLayout(new java.awt.BorderLayout());
 
-        btnLogout.setLabel("<html>Log<br/>Out</html>");
-        btnLogout.setMaximumSize(new java.awt.Dimension(68, 70));
-        btnLogout.setMinimumSize(new java.awt.Dimension(70, 70));
-        btnLogout.setPreferredSize(new java.awt.Dimension(70, 70));
-        btnLogout.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnLogoutActionPerformed(evt);
-            }
-        });
-        Actions.add(btnLogout);
+    javax.swing.GroupLayout MembersLayout = new javax.swing.GroupLayout(Members);
+    Members.setLayout(MembersLayout);
+    MembersLayout.setHorizontalGroup(
+        MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGap(0, 0, Short.MAX_VALUE)
+    );
+    MembersLayout.setVerticalGroup(
+        MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGap(0, 0, Short.MAX_VALUE)
+    );
 
-        ActionPane.add(Actions, java.awt.BorderLayout.EAST);
+    ActionPane.add(Members, java.awt.BorderLayout.CENTER);
 
-        RightFrame.add(ActionPane, java.awt.BorderLayout.PAGE_START);
+    Actions.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 5, 1, 5));
+    Actions.setLayout(new javax.swing.BoxLayout(Actions, javax.swing.BoxLayout.LINE_AXIS));
 
-        InputPanel.setLayout(new java.awt.BorderLayout());
-        InputPanel.add(txtInput, java.awt.BorderLayout.CENTER);
+    btnStream.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/video-chat.png"))
+    .getImage()
+    .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
+    btnStream.setMaximumSize(new java.awt.Dimension(50, 50));
+    btnStream.setMinimumSize(new java.awt.Dimension(50, 50));
+    btnStream.setOpaque(false);
+    btnStream.setPreferredSize(new java.awt.Dimension(50, 50));
+    Actions.add(btnStream);
 
-        SendFuncs.setMaximumSize(new java.awt.Dimension(189, 23));
-        SendFuncs.setMinimumSize(new java.awt.Dimension(189, 23));
-        SendFuncs.setPreferredSize(new java.awt.Dimension(189, 23));
-        SendFuncs.setLayout(new javax.swing.BoxLayout(SendFuncs, javax.swing.BoxLayout.LINE_AXIS));
+    btnCreateGroup.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/add-group.png"))
+    .getImage()
+    .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
+    btnCreateGroup.setMaximumSize(new java.awt.Dimension(50, 50));
+    btnCreateGroup.setMinimumSize(new java.awt.Dimension(50, 50));
+    btnCreateGroup.setPreferredSize(new java.awt.Dimension(50, 50));
+    Actions.add(btnCreateGroup);
 
-        btnFile.setText("File");
-        btnFile.setMaximumSize(new java.awt.Dimension(63, 27));
-        btnFile.setMinimumSize(new java.awt.Dimension(63, 27));
-        btnFile.setPreferredSize(new java.awt.Dimension(63, 27));
-        SendFuncs.add(btnFile);
+    btnLogout.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/logout.png"))
+    .getImage()
+    .getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
+    btnLogout.setText("");
+    btnLogout.setMaximumSize(new java.awt.Dimension(50, 50));
+    btnLogout.setMinimumSize(new java.awt.Dimension(50, 50));
+    btnLogout.setPreferredSize(new java.awt.Dimension(50, 50));
+    btnLogout.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnLogoutActionPerformed(evt);
+        }
+    });
+    Actions.add(btnLogout);
 
-        btnImage.setText("Image");
-        btnImage.setMaximumSize(new java.awt.Dimension(63, 27));
-        btnImage.setMinimumSize(new java.awt.Dimension(63, 27));
-        btnImage.setPreferredSize(new java.awt.Dimension(63, 27));
-        SendFuncs.add(btnImage);
+    ActionPane.add(Actions, java.awt.BorderLayout.EAST);
 
-        btnSend.setLabel("Send");
-        btnSend.setMaximumSize(new java.awt.Dimension(63, 27));
-        btnSend.setMinimumSize(new java.awt.Dimension(63, 27));
-        btnSend.setPreferredSize(new java.awt.Dimension(63, 27));
-        btnSend.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSendActionPerformed(evt);
-            }
-        });
-        SendFuncs.add(btnSend);
+    RightFrame.add(ActionPane, java.awt.BorderLayout.PAGE_START);
 
-        InputPanel.add(SendFuncs, java.awt.BorderLayout.LINE_END);
+    InputPanel.setLayout(new java.awt.BorderLayout());
+    InputPanel.add(txtInput, java.awt.BorderLayout.CENTER);
 
-        RightFrame.add(InputPanel, java.awt.BorderLayout.PAGE_END);
+    SendFuncs.setMaximumSize(new java.awt.Dimension(120, 23));
+    SendFuncs.setMinimumSize(new java.awt.Dimension(120, 23));
+    SendFuncs.setPreferredSize(new java.awt.Dimension(120, 23));
+    SendFuncs.setLayout(new javax.swing.BoxLayout(SendFuncs, javax.swing.BoxLayout.LINE_AXIS));
 
-        jScrollPane3.setViewportView(ChatArea);
+    btnFile.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/file.png"))
+    .getImage()
+    .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
+    btnFile.setLabel("");
+    btnFile.setMaximumSize(new java.awt.Dimension(35, 27));
+    btnFile.setMinimumSize(new java.awt.Dimension(35, 27));
+    btnFile.setPreferredSize(new java.awt.Dimension(35, 27));
+    btnFile.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnFileActionPerformed(evt);
+        }
+    });
+    SendFuncs.add(btnFile);
 
-        RightFrame.add(jScrollPane3, java.awt.BorderLayout.CENTER);
+    btnImage.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/image.png"))
+    .getImage()
+    .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
+    btnImage.setMaximumSize(new java.awt.Dimension(35, 27));
+    btnImage.setMinimumSize(new java.awt.Dimension(35, 27));
+    btnImage.setPreferredSize(new java.awt.Dimension(35, 27));
+    SendFuncs.add(btnImage);
 
-        jSplitPane2.setRightComponent(RightFrame);
+    btnSend.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/send.png"))
+    .getImage()
+    .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
+    btnSend.setText("");
+    btnSend.setMaximumSize(new java.awt.Dimension(50, 27));
+    btnSend.setMinimumSize(new java.awt.Dimension(50, 27));
+    btnSend.setPreferredSize(new java.awt.Dimension(50, 27));
+    btnSend.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnSendActionPerformed(evt);
+        }
+    });
+    SendFuncs.add(btnSend);
 
-        MainScreen.add(jSplitPane2, java.awt.BorderLayout.CENTER);
+    InputPanel.add(SendFuncs, java.awt.BorderLayout.LINE_END);
 
-        FramePanel.add(MainScreen, "card2");
+    RightFrame.add(InputPanel, java.awt.BorderLayout.PAGE_END);
 
-        getContentPane().add(FramePanel, java.awt.BorderLayout.CENTER);
+    jScrollPane3.setViewportView(ChatArea);
 
-        pack();
+    RightFrame.add(jScrollPane3, java.awt.BorderLayout.CENTER);
+
+    jSplitPane2.setRightComponent(RightFrame);
+
+    MainScreen.add(jSplitPane2, java.awt.BorderLayout.CENTER);
+
+    FramePanel.add(MainScreen, "card2");
+
+    getContentPane().add(FramePanel, java.awt.BorderLayout.CENTER);
+
+    pack();
     }// </editor-fold>//GEN-END:initComponents
 
     void append(String str) {
@@ -442,6 +491,10 @@ public class ClientGUI extends javax.swing.JFrame {
 //        }
     }//GEN-LAST:event_btnSendActionPerformed
 
+    private void btnFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFileActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnFileActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -494,6 +547,7 @@ public class ClientGUI extends javax.swing.JFrame {
     private javax.swing.JList<String> FriendList;
     private javax.swing.JPanel InputPanel;
     private javax.swing.JPanel LeftFrame;
+    private javax.swing.JPanel ListPane;
     private javax.swing.JPanel LoginArea;
     private javax.swing.JPanel LoginPanel;
     private javax.swing.JPanel LoginScreen;
@@ -501,6 +555,7 @@ public class ClientGUI extends javax.swing.JFrame {
     private javax.swing.JPanel MainScreen;
     private javax.swing.JPanel Members;
     private javax.swing.JPanel RightFrame;
+    private javax.swing.JPanel SearchPanel;
     private javax.swing.JPanel SendFuncs;
     private javax.swing.JPanel StatusPane;
     private javax.swing.JButton btnChangeStatus;
@@ -510,6 +565,7 @@ public class ClientGUI extends javax.swing.JFrame {
     private javax.swing.JButton btnLogin;
     private javax.swing.JButton btnLogout;
     private javax.swing.JButton btnRegister;
+    private javax.swing.JButton btnSearch;
     private javax.swing.JButton btnSend;
     private javax.swing.JButton btnStream;
     private javax.swing.JScrollPane jScrollPane1;
@@ -523,6 +579,7 @@ public class ClientGUI extends javax.swing.JFrame {
     private javax.swing.JLabel lblYourStatus;
     private javax.swing.JTextField txtInput;
     private javax.swing.JPasswordField txtPassword;
+    private javax.swing.JTextField txtSearch;
     private javax.swing.JTextField txtUsername;
     // End of variables declaration//GEN-END:variables
 
