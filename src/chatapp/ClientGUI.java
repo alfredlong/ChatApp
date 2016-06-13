@@ -5,7 +5,18 @@
  */
 package chatapp;
 
+import chatpackage.ChatUser;
+import chatpackage.PackageConversation;
+import chatpackage.PackageFriendRequest;
+import chatpackage.PackageLogin;
+import chatpackage.PackageMessage;
+import chatpackage.PackageRegister;
+import chatpackage.PackageSearchUser;
+import chatpackage.PackageStatus;
 import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,8 +27,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
+import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.ListCellRenderer;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
 
@@ -44,14 +60,45 @@ public class ClientGUI extends javax.swing.JFrame {
                 .getScaledInstance(width, height, Image.SCALE_SMOOTH));
     }
     
+    private JPanel createListItem(String name, String path) {
+        JLabel label = new JLabel();
+        label.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+                .getResource(path))
+                .getImage()
+                .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
+        label.setText(name);
+        JPanel pane = new JPanel();
+        pane.add(label);
+        pane.setLayout(new FlowLayout(FlowLayout.LEFT));
+        return pane;
+    }
+    
     public ClientGUI(String host, int port) {
         defaultHost = host;
         defaultPort = port;
         this.setResizable(false);
         
         initComponents();
+               
+        JPanel testpane = createListItem("Balala", "/chatapp/res/awake.png");
+        DefaultListModel model = new DefaultListModel();
+        for (int i = 0; i < 3; i++) {
+            model.addElement(testpane);
+        }
+        model.addElement(createListItem("thisisit", "/chatapp/res/sleep.png"));
+        for (int i = 0; i < 3; i++) {
+            model.addElement(testpane);
+        }
         
-        lblLogo.setIcon(getImage("/chatapp/res/logo.jpg",
+//        for (int i = 0; i < model.size(); i++) {
+//            JPanel p = (JPanel)model.getElementAt(i);
+//            if (p.)
+//        }
+        FriendList.setModel(model);
+        FriendList.setCellRenderer(new PanelRenderer());
+        FriendList.validate();
+        
+        lblLogo.setIcon(getImage("/chatapp/res/logo.png",
                 lblLogo.getWidth(),
                 lblLogo.getHeight()));
         lblYourAvatar.setIcon(getImage("/chatapp/res/avatar.png",
@@ -86,8 +133,7 @@ public class ClientGUI extends javax.swing.JFrame {
         StatusPane = new javax.swing.JPanel();
         lblYourAvatar = new javax.swing.JLabel();
         lblYourName = new javax.swing.JLabel();
-        lblYourStatus = new javax.swing.JLabel();
-        btnChangeStatus = new javax.swing.JButton();
+        cbStatus = new javax.swing.JComboBox<>();
         ListPane = new javax.swing.JPanel();
         SearchPanel = new javax.swing.JPanel();
         txtSearch = new javax.swing.JTextField();
@@ -97,6 +143,10 @@ public class ClientGUI extends javax.swing.JFrame {
         RightFrame = new javax.swing.JPanel();
         ActionPane = new javax.swing.JPanel();
         Members = new javax.swing.JPanel();
+        dummyFriend = new javax.swing.JTextField();
+        dummyFriendId = new javax.swing.JTextField();
+        dummyAddFriend = new javax.swing.JButton();
+        dummnyGetCon = new javax.swing.JButton();
         Actions = new javax.swing.JPanel();
         btnStream = new javax.swing.JButton();
         btnCreateGroup = new javax.swing.JButton();
@@ -111,35 +161,42 @@ public class ClientGUI extends javax.swing.JFrame {
         ChatArea = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Live Chat!");
 
-        FramePanel.setPreferredSize(new java.awt.Dimension(800, 500));
+        FramePanel.setBackground(new java.awt.Color(140, 198, 62));
+        FramePanel.setPreferredSize(new java.awt.Dimension(800, 400));
         FramePanel.setLayout(new java.awt.CardLayout());
 
+        LoginScreen.setBackground(new java.awt.Color(140, 198, 62));
         LoginScreen.setLayout(new java.awt.BorderLayout());
 
-        LogoPanel.setPreferredSize(new java.awt.Dimension(400, 500));
+        LogoPanel.setBackground(new java.awt.Color(140, 198, 62));
+        LogoPanel.setPreferredSize(new java.awt.Dimension(500, 500));
 
         javax.swing.GroupLayout LogoPanelLayout = new javax.swing.GroupLayout(LogoPanel);
         LogoPanel.setLayout(LogoPanelLayout);
         LogoPanelLayout.setHorizontalGroup(
             LogoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LogoPanelLayout.createSequentialGroup()
-                .addContainerGap(84, Short.MAX_VALUE)
-                .addComponent(lblLogo, javax.swing.GroupLayout.PREFERRED_SIZE, 306, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addContainerGap(55, Short.MAX_VALUE)
+                .addComponent(lblLogo, javax.swing.GroupLayout.PREFERRED_SIZE, 415, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(30, 30, 30))
         );
         LogoPanelLayout.setVerticalGroup(
             LogoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(LogoPanelLayout.createSequentialGroup()
-                .addGap(63, 63, 63)
-                .addComponent(lblLogo, javax.swing.GroupLayout.PREFERRED_SIZE, 306, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(131, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LogoPanelLayout.createSequentialGroup()
+                .addContainerGap(168, Short.MAX_VALUE)
+                .addComponent(lblLogo, javax.swing.GroupLayout.PREFERRED_SIZE, 270, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(62, 62, 62))
         );
 
         LoginScreen.add(LogoPanel, java.awt.BorderLayout.LINE_START);
 
-        LoginPanel.setPreferredSize(new java.awt.Dimension(400, 500));
+        LoginPanel.setBackground(new java.awt.Color(140, 198, 62));
+        LoginPanel.setPreferredSize(new java.awt.Dimension(300, 500));
         LoginPanel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        LoginArea.setBackground(new java.awt.Color(140, 198, 62));
 
         btnLogin.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         btnLogin.setText("Login");
@@ -191,7 +248,7 @@ public class ClientGUI extends javax.swing.JFrame {
         LoginAreaLayout.setVerticalGroup(
             LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LoginAreaLayout.createSequentialGroup()
-                .addContainerGap(93, Short.MAX_VALUE)
+                .addContainerGap(96, Short.MAX_VALUE)
                 .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(71, 71, 71))
             .addGroup(LoginAreaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -209,20 +266,24 @@ public class ClientGUI extends javax.swing.JFrame {
                     .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
 
-        LoginPanel.add(LoginArea, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 100, -1, -1));
+        LoginPanel.add(LoginArea, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 90, -1, -1));
 
         LoginScreen.add(LoginPanel, java.awt.BorderLayout.CENTER);
 
         FramePanel.add(LoginScreen, "card1");
 
+        MainScreen.setBackground(new java.awt.Color(140, 198, 62));
         MainScreen.setPreferredSize(new java.awt.Dimension(800, 500));
         MainScreen.setLayout(new java.awt.BorderLayout());
 
+        jSplitPane2.setBackground(new java.awt.Color(140, 198, 62));
         jSplitPane2.setDividerLocation(200);
         jSplitPane2.setDividerSize(2);
 
+        LeftFrame.setBackground(new java.awt.Color(140, 198, 62));
         LeftFrame.setLayout(new java.awt.BorderLayout());
 
+        StatusPane.setBackground(new java.awt.Color(140, 198, 62));
         StatusPane.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         StatusPane.setMaximumSize(new java.awt.Dimension(100, 100));
         StatusPane.setPreferredSize(new java.awt.Dimension(100, 100));
@@ -235,20 +296,21 @@ public class ClientGUI extends javax.swing.JFrame {
         lblYourName.setText("Your name");
         StatusPane.add(lblYourName, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 20, -1, -1));
 
-        lblYourStatus.setText("Current status");
-        StatusPane.add(lblYourStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 40, -1, -1));
-
-        btnChangeStatus.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
-        btnChangeStatus.setText("Change");
-        btnChangeStatus.setMaximumSize(new java.awt.Dimension(55, 20));
-        btnChangeStatus.setMinimumSize(new java.awt.Dimension(55, 20));
-        btnChangeStatus.setPreferredSize(new java.awt.Dimension(55, 20));
-        StatusPane.add(btnChangeStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 60, 70, -1));
+        cbStatus.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
+        cbStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ONLINE", "AWAY", "BUSY", "HIDDEN" }));
+        cbStatus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbStatusActionPerformed(evt);
+            }
+        });
+        StatusPane.add(cbStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 40, 80, 20));
 
         LeftFrame.add(StatusPane, java.awt.BorderLayout.PAGE_START);
 
+        ListPane.setBackground(new java.awt.Color(140, 198, 62));
         ListPane.setLayout(new java.awt.BorderLayout());
 
+        SearchPanel.setBackground(new java.awt.Color(140, 198, 62));
         SearchPanel.setLayout(new java.awt.BorderLayout());
         SearchPanel.add(txtSearch, java.awt.BorderLayout.CENTER);
 
@@ -260,15 +322,17 @@ public class ClientGUI extends javax.swing.JFrame {
 btnSearch.setMaximumSize(new java.awt.Dimension(30, 21));
 btnSearch.setMinimumSize(new java.awt.Dimension(30, 21));
 btnSearch.setPreferredSize(new java.awt.Dimension(30, 21));
-SearchPanel.add(btnSearch, java.awt.BorderLayout.EAST);
-
-ListPane.add(SearchPanel, java.awt.BorderLayout.PAGE_START);
-
-FriendList.setModel(new javax.swing.AbstractListModel<String>() {
-    String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-    public int getSize() { return strings.length; }
-    public String getElementAt(int i) { return strings[i]; }
+btnSearch.addActionListener(new java.awt.event.ActionListener() {
+    public void actionPerformed(java.awt.event.ActionEvent evt) {
+        btnSearchActionPerformed(evt);
+    }
     });
+    SearchPanel.add(btnSearch, java.awt.BorderLayout.EAST);
+
+    ListPane.add(SearchPanel, java.awt.BorderLayout.PAGE_START);
+
+    jScrollPane1.setBackground(new java.awt.Color(140, 198, 62));
+
     jScrollPane1.setViewportView(FriendList);
 
     ListPane.add(jScrollPane1, java.awt.BorderLayout.CENTER);
@@ -277,26 +341,67 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
 
     jSplitPane2.setLeftComponent(LeftFrame);
 
+    RightFrame.setBackground(new java.awt.Color(140, 198, 62));
     RightFrame.setLayout(new java.awt.BorderLayout());
 
+    ActionPane.setBackground(new java.awt.Color(140, 198, 62));
     ActionPane.setBorder(javax.swing.BorderFactory.createEtchedBorder());
     ActionPane.setMaximumSize(new java.awt.Dimension(100, 100));
     ActionPane.setPreferredSize(new java.awt.Dimension(100, 100));
     ActionPane.setLayout(new java.awt.BorderLayout());
 
+    Members.setBackground(new java.awt.Color(140, 198, 62));
+
+    dummyFriend.setText("friend");
+
+    dummyFriendId.setText("friend id");
+
+    dummyAddFriend.setText("add friend");
+    dummyAddFriend.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            dummyAddFriendActionPerformed(evt);
+        }
+    });
+
+    dummnyGetCon.setText("get con");
+    dummnyGetCon.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            dummnyGetConActionPerformed(evt);
+        }
+    });
+
     javax.swing.GroupLayout MembersLayout = new javax.swing.GroupLayout(Members);
     Members.setLayout(MembersLayout);
     MembersLayout.setHorizontalGroup(
         MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGap(0, 0, Short.MAX_VALUE)
+        .addGroup(MembersLayout.createSequentialGroup()
+            .addGap(43, 43, 43)
+            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addComponent(dummyFriendId)
+                .addComponent(dummyFriend))
+            .addGap(18, 18, 18)
+            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addComponent(dummyAddFriend, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(dummnyGetCon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addContainerGap(246, Short.MAX_VALUE))
     );
     MembersLayout.setVerticalGroup(
         MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGap(0, 0, Short.MAX_VALUE)
+        .addGroup(MembersLayout.createSequentialGroup()
+            .addContainerGap()
+            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addComponent(dummyFriend, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(dummyAddFriend))
+            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addComponent(dummyFriendId, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(dummnyGetCon))
+            .addContainerGap(28, Short.MAX_VALUE))
     );
 
     ActionPane.add(Members, java.awt.BorderLayout.CENTER);
 
+    Actions.setBackground(new java.awt.Color(140, 198, 62));
     Actions.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 5, 1, 5));
     Actions.setLayout(new javax.swing.BoxLayout(Actions, javax.swing.BoxLayout.LINE_AXIS));
 
@@ -323,7 +428,6 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
         .getResource("/chatapp/res/logout.png"))
     .getImage()
     .getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
-    btnLogout.setText("");
     btnLogout.setMaximumSize(new java.awt.Dimension(50, 50));
     btnLogout.setMinimumSize(new java.awt.Dimension(50, 50));
     btnLogout.setPreferredSize(new java.awt.Dimension(50, 50));
@@ -338,9 +442,11 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
 
     RightFrame.add(ActionPane, java.awt.BorderLayout.PAGE_START);
 
+    InputPanel.setBackground(new java.awt.Color(140, 198, 62));
     InputPanel.setLayout(new java.awt.BorderLayout());
     InputPanel.add(txtInput, java.awt.BorderLayout.CENTER);
 
+    SendFuncs.setBackground(new java.awt.Color(140, 198, 62));
     SendFuncs.setMaximumSize(new java.awt.Dimension(120, 23));
     SendFuncs.setMinimumSize(new java.awt.Dimension(120, 23));
     SendFuncs.setPreferredSize(new java.awt.Dimension(120, 23));
@@ -350,7 +456,6 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
         .getResource("/chatapp/res/file.png"))
     .getImage()
     .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
-    btnFile.setLabel("");
     btnFile.setMaximumSize(new java.awt.Dimension(35, 27));
     btnFile.setMinimumSize(new java.awt.Dimension(35, 27));
     btnFile.setPreferredSize(new java.awt.Dimension(35, 27));
@@ -374,7 +479,6 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
         .getResource("/chatapp/res/send.png"))
     .getImage()
     .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
-    btnSend.setText("");
     btnSend.setMaximumSize(new java.awt.Dimension(50, 27));
     btnSend.setMinimumSize(new java.awt.Dimension(50, 27));
     btnSend.setPreferredSize(new java.awt.Dimension(50, 27));
@@ -389,6 +493,9 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
 
     RightFrame.add(InputPanel, java.awt.BorderLayout.PAGE_END);
 
+    jScrollPane3.setBackground(new java.awt.Color(140, 198, 62));
+
+    ChatArea.setEditable(false);
     jScrollPane3.setViewportView(ChatArea);
 
     RightFrame.add(jScrollPane3, java.awt.BorderLayout.CENTER);
@@ -411,6 +518,25 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
         } catch (BadLocationException ex) {
             Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    void setStatus(String stt) {
+        cbStatus.setSelectedItem(stt);
+    }
+    
+    int friendReqOption(Object[] options, PackageFriendRequest request) {
+        return JOptionPane.showOptionDialog(this,
+                    "Friend request from " + request.getUserSender(),
+                    "Friend request",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[1]);
+    }
+    
+    void showDialog(String str) {
+        JOptionPane.showMessageDialog(null, str);
     }
     
     void connectionFailed() {
@@ -456,9 +582,15 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
         String password = PassToStr(txtPassword.getPassword()).trim();
              
         if (checkValid(username, password)) {
-//            client = new Client(defaultHost, defaultPort, username, password);
-//            if(!client.start())
-//                return;
+            lblYourName.setText(username);
+            
+            client = new Client(defaultHost, defaultPort, username, password, this);
+            client.start();
+            
+            PackageLogin login = new PackageLogin();
+            login.setUsername(username);
+            login.setPassword(password);
+            client.sendObject(login);
 
             CardLayout card = (CardLayout) FramePanel.getLayout();
             card.show(FramePanel, "card2");
@@ -471,30 +603,71 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
         String password = PassToStr(txtPassword.getPassword()).trim();
         
         if (checkValid(username, password)) {
-            
+            PackageRegister register = new PackageRegister();
+            register.setUsername(username);
+            register.setPassword(password);
+            register.setEmail("");
+            client.sendObject(register);
         }
     }//GEN-LAST:event_btnRegisterActionPerformed
 
     private void btnLogoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogoutActionPerformed
-        //client.sendMessage(new ChatMessage(ChatMessage.LOGOUT, ""));
+        client.disconnect();
         resetAll();
         CardLayout card = (CardLayout) FramePanel.getLayout();
         card.show(FramePanel, "card1");
+        this.setResizable(false);
+        this.setSize(800, 420);
     }//GEN-LAST:event_btnLogoutActionPerformed
 
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         append(txtInput.getText() + "\n");
         txtInput.setText("");
-//        if (connected) {
-//            client.sendMessage(new ChatMessage(ChatMessage.MESSAGE, txtInput.getText()));            
-//            txtInput.setText("");
-//        }
+        if (connected) {
+            PackageMessage message = new PackageMessage(client.client_id, Integer.parseInt(dummyFriendId.getText()), txtInput.getText());
+            message.setId_con(client.id_con);
+            client.sendObject(message);
+        }
     }//GEN-LAST:event_btnSendActionPerformed
 
     private void btnFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFileActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnFileActionPerformed
 
+    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+        PackageSearchUser search = new PackageSearchUser(txtSearch.getText());
+        client.sendObject(search);
+    }//GEN-LAST:event_btnSearchActionPerformed
+
+    private void cbStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbStatusActionPerformed
+        if (client.friends == null) 
+            return;
+        
+        PackageStatus status = new PackageStatus(client.client_id, cbStatus.getSelectedItem().toString());
+        client.sendObject(status);
+        
+        //if the friend_id != 0 you sent it to friends
+        for (ChatUser friend : client.friends) {
+            status = new PackageStatus(client.client_id, cbStatus.getSelectedItem().toString());
+            status.setFriend_id(friend.getId());
+            client.sendObject(status);
+        }
+    }//GEN-LAST:event_cbStatusActionPerformed
+
+    private void dummyAddFriendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dummyAddFriendActionPerformed
+        PackageFriendRequest request = new PackageFriendRequest(client.client_id, Integer.parseInt(dummyFriend.getText()));
+        request.setRequest(true);
+        client.sendObject(request);
+    }//GEN-LAST:event_dummyAddFriendActionPerformed
+
+    private void dummnyGetConActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dummnyGetConActionPerformed
+        PackageConversation conversation = new PackageConversation();
+        conversation.setId_userA(client.client_id);
+        conversation.setId_userB(Integer.parseInt(dummyFriendId.getText()));
+        client.sendObject(conversation);
+    }//GEN-LAST:event_dummnyGetConActionPerformed
+   
+    
     /**
      * @param args the command line arguments
      */
@@ -558,7 +731,6 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
     private javax.swing.JPanel SearchPanel;
     private javax.swing.JPanel SendFuncs;
     private javax.swing.JPanel StatusPane;
-    private javax.swing.JButton btnChangeStatus;
     private javax.swing.JButton btnCreateGroup;
     private javax.swing.JButton btnFile;
     private javax.swing.JButton btnImage;
@@ -568,6 +740,11 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
     private javax.swing.JButton btnSearch;
     private javax.swing.JButton btnSend;
     private javax.swing.JButton btnStream;
+    private javax.swing.JComboBox<String> cbStatus;
+    private javax.swing.JButton dummnyGetCon;
+    private javax.swing.JButton dummyAddFriend;
+    private javax.swing.JTextField dummyFriend;
+    private javax.swing.JTextField dummyFriendId;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSplitPane jSplitPane2;
@@ -576,11 +753,19 @@ FriendList.setModel(new javax.swing.AbstractListModel<String>() {
     private javax.swing.JLabel lblUsername;
     private javax.swing.JLabel lblYourAvatar;
     private javax.swing.JLabel lblYourName;
-    private javax.swing.JLabel lblYourStatus;
     private javax.swing.JTextField txtInput;
     private javax.swing.JPasswordField txtPassword;
     private javax.swing.JTextField txtSearch;
     private javax.swing.JTextField txtUsername;
     // End of variables declaration//GEN-END:variables
 
+    class PanelRenderer implements ListCellRenderer {
+
+        @Override
+        public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JPanel renderer = (JPanel) value;
+            renderer.setBackground(isSelected ? Color.green : Color.white);
+            return renderer;
+        }
+    }
 }
