@@ -5,28 +5,19 @@
  */
 package chatapp;
 
-import chatpackage.ChatUser;
-import chatpackage.PackageConversation;
-import chatpackage.PackageFriendRequest;
-import chatpackage.PackageLogin;
-import chatpackage.PackageMessage;
-import chatpackage.PackageRegister;
-import chatpackage.PackageSearchUser;
-import chatpackage.PackageStatus;
+import chatpackage.*;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import javax.imageio.ImageIO;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -48,62 +39,105 @@ public class ClientGUI extends javax.swing.JFrame {
     private Client client;
     private int defaultPort;
     private String defaultHost;
-    
+    private boolean isSearching = false;
+
+    DefaultListModel friendModel;
+    DefaultListModel pendingModel;
+    DefaultListModel groupModel;
+    DefaultListModel searchModel;
+
     /**
      * Creates new form MainScreen
      */
-    
     private ImageIcon getImage(String path, int width, int height) {
         return new ImageIcon(new ImageIcon(getClass()
                 .getResource(path))
                 .getImage()
                 .getScaledInstance(width, height, Image.SCALE_SMOOTH));
     }
-    
-    private JPanel createListItem(String name, String path) {
-        JLabel label = new JLabel();
-        label.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
-                .getResource(path))
-                .getImage()
-                .getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
-        label.setText(name);
-        JPanel pane = new JPanel();
-        pane.add(label);
-        pane.setLayout(new FlowLayout(FlowLayout.LEFT));
-        return pane;
+
+    public void LoginToMainScr() {
+        CardLayout card = (CardLayout) FramePanel.getLayout();
+        card.show(FramePanel, "card2");
+        this.setResizable(true);
+    }
+
+    public void initSearchList(ArrayList<ChatUser> search_user_list) {
+        searchModel = new DefaultListModel();
+                
+        String imgPath = "/chatapp/res/stranger.png";
+        for (ChatUser user : search_user_list) {
+            searchModel.addElement(new ImageJPanel(user.getUsername(), imgPath, user));
+        }
+        
+        SearchList.setModel(searchModel);
+        SearchList.setCellRenderer(new PanelRenderer());
+        SearchList.validate();
     }
     
+    public void initFriendList() {
+        friendModel = new DefaultListModel();
+        pendingModel = new DefaultListModel();
+        
+        for (ChatUser friend : client.friends) {
+            String imgPath = "";
+            if (friend.isOnline()) {
+                switch (friend.getStatus()) {
+                    case "ONLINE":
+                        imgPath = "/chatapp/res/awake.png";
+                        break;
+                    case "AWAY":
+                        imgPath = "/chatapp/res/away.png";
+                        break;
+                    case "BUSY":
+                        imgPath = "/chatapp/res/busy.png";
+                        break;
+                    case "HIDDEN":
+                        imgPath = "/chatapp/res/sleep.png";
+                        break;
+                }
+            } else {
+                imgPath = "/chatapp/res/sleep.png";
+            }
+            friendModel.addElement(new ImageJPanel(friend.getUsername(), imgPath, friend));
+        }
+
+        for (ChatUser friend : client.pendingFriends) {
+            String imgPath = "/chatapp/res/stranger.png";
+            pendingModel.addElement(new ImageJPanel(friend.getUsername(), imgPath, friend));
+        }
+
+        FriendList.setModel(friendModel);
+        FriendList.setCellRenderer(new PanelRenderer());
+        FriendList.validate();
+
+        PendingList.setModel(pendingModel);
+        PendingList.setCellRenderer(new PanelRenderer());
+        PendingList.validate();
+    }
+
     public ClientGUI(String host, int port) {
         defaultHost = host;
         defaultPort = port;
         this.setResizable(false);
-        
+
         initComponents();
-               
-        JPanel testpane = createListItem("Balala", "/chatapp/res/awake.png");
-        DefaultListModel model = new DefaultListModel();
-        for (int i = 0; i < 3; i++) {
-            model.addElement(testpane);
-        }
-        model.addElement(createListItem("thisisit", "/chatapp/res/sleep.png"));
-        for (int i = 0; i < 3; i++) {
-            model.addElement(testpane);
-        }
-        
-//        for (int i = 0; i < model.size(); i++) {
-//            JPanel p = (JPanel)model.getElementAt(i);
-//            if (p.)
-//        }
-        FriendList.setModel(model);
-        FriendList.setCellRenderer(new PanelRenderer());
-        FriendList.validate();
-        
+
+        groupModel = new DefaultListModel();
+
         lblLogo.setIcon(getImage("/chatapp/res/logo.png",
                 lblLogo.getWidth(),
                 lblLogo.getHeight()));
         lblYourAvatar.setIcon(getImage("/chatapp/res/avatar.png",
                 lblYourAvatar.getWidth(),
                 lblYourAvatar.getHeight()));
+        AddBtnPanel.setVisible(false);
+        
+        this.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                client.disconnect();
+            }
+        });
     }
 
     /**
@@ -138,15 +172,24 @@ public class ClientGUI extends javax.swing.JFrame {
         SearchPanel = new javax.swing.JPanel();
         txtSearch = new javax.swing.JTextField();
         btnSearch = new javax.swing.JButton();
+        ListCardPanel = new javax.swing.JPanel();
+        TabbedPanel = new javax.swing.JTabbedPane();
         jScrollPane1 = new javax.swing.JScrollPane();
         FriendList = new javax.swing.JList<>();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        PendingList = new javax.swing.JList<>();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        GroupList = new javax.swing.JList<>();
+        SearchResult = new javax.swing.JPanel();
+        jScrollPane5 = new javax.swing.JScrollPane();
+        SearchList = new javax.swing.JList<>();
+        btnSearchReturn = new javax.swing.JButton();
         RightFrame = new javax.swing.JPanel();
         ActionPane = new javax.swing.JPanel();
         Members = new javax.swing.JPanel();
-        dummyFriend = new javax.swing.JTextField();
-        dummyFriendId = new javax.swing.JTextField();
-        dummyAddFriend = new javax.swing.JButton();
-        dummnyGetCon = new javax.swing.JButton();
+        ContactInfoPanel = new javax.swing.JPanel();
+        AddBtnPanel = new javax.swing.JPanel();
+        btnAddContacts = new javax.swing.JButton();
         Actions = new javax.swing.JPanel();
         btnStream = new javax.swing.JButton();
         btnCreateGroup = new javax.swing.JButton();
@@ -331,11 +374,68 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
     ListPane.add(SearchPanel, java.awt.BorderLayout.PAGE_START);
 
+    ListCardPanel.setLayout(new java.awt.CardLayout());
+
+    TabbedPanel.setBackground(new java.awt.Color(140, 198, 62));
+    TabbedPanel.addChangeListener(new javax.swing.event.ChangeListener() {
+        public void stateChanged(javax.swing.event.ChangeEvent evt) {
+            TabbedPanelStateChanged(evt);
+        }
+    });
+
     jScrollPane1.setBackground(new java.awt.Color(140, 198, 62));
 
+    FriendList.setFixedCellHeight(30);
+    FriendList.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+        public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+            FriendListValueChanged(evt);
+        }
+    });
     jScrollPane1.setViewportView(FriendList);
 
-    ListPane.add(jScrollPane1, java.awt.BorderLayout.CENTER);
+    TabbedPanel.addTab("Friends", jScrollPane1);
+
+    jScrollPane2.setBackground(new java.awt.Color(140, 198, 62));
+
+    PendingList.setFixedCellHeight(30);
+    jScrollPane2.setViewportView(PendingList);
+
+    TabbedPanel.addTab("Pending", jScrollPane2);
+
+    jScrollPane4.setBackground(new java.awt.Color(140, 198, 62));
+
+    GroupList.setFixedCellHeight(30);
+    jScrollPane4.setViewportView(GroupList);
+
+    TabbedPanel.addTab("Groups", jScrollPane4);
+
+    ListCardPanel.add(TabbedPanel, "list1");
+
+    SearchResult.setBackground(new java.awt.Color(140, 198, 62));
+    SearchResult.setLayout(new java.awt.BorderLayout());
+
+    jScrollPane5.setBackground(new java.awt.Color(140, 198, 62));
+
+    SearchList.setModel(new javax.swing.AbstractListModel<String>() {
+        String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+        public int getSize() { return strings.length; }
+        public String getElementAt(int i) { return strings[i]; }
+    });
+    jScrollPane5.setViewportView(SearchList);
+
+    SearchResult.add(jScrollPane5, java.awt.BorderLayout.CENTER);
+
+    btnSearchReturn.setText("Return");
+    btnSearchReturn.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnSearchReturnActionPerformed(evt);
+        }
+    });
+    SearchResult.add(btnSearchReturn, java.awt.BorderLayout.PAGE_END);
+
+    ListCardPanel.add(SearchResult, "list2");
+
+    ListPane.add(ListCardPanel, java.awt.BorderLayout.CENTER);
 
     LeftFrame.add(ListPane, java.awt.BorderLayout.CENTER);
 
@@ -351,53 +451,61 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     ActionPane.setLayout(new java.awt.BorderLayout());
 
     Members.setBackground(new java.awt.Color(140, 198, 62));
+    Members.setLayout(new java.awt.BorderLayout());
 
-    dummyFriend.setText("friend");
+    ContactInfoPanel.setBackground(new java.awt.Color(140, 198, 62));
 
-    dummyFriendId.setText("friend id");
+    javax.swing.GroupLayout ContactInfoPanelLayout = new javax.swing.GroupLayout(ContactInfoPanel);
+    ContactInfoPanel.setLayout(ContactInfoPanelLayout);
+    ContactInfoPanelLayout.setHorizontalGroup(
+        ContactInfoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGap(0, 383, Short.MAX_VALUE)
+    );
+    ContactInfoPanelLayout.setVerticalGroup(
+        ContactInfoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGap(0, 96, Short.MAX_VALUE)
+    );
 
-    dummyAddFriend.setText("add friend");
-    dummyAddFriend.addActionListener(new java.awt.event.ActionListener() {
+    Members.add(ContactInfoPanel, java.awt.BorderLayout.CENTER);
+
+    AddBtnPanel.setBackground(new java.awt.Color(140, 198, 62));
+    AddBtnPanel.setMaximumSize(new java.awt.Dimension(50, 50));
+    AddBtnPanel.setPreferredSize(new java.awt.Dimension(50, 50));
+
+    btnAddContacts.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/add-contacts.png"))
+    .getImage()
+    .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
+    btnAddContacts.setBorder(null);
+    btnAddContacts.setBorderPainted(false);
+    btnAddContacts.setMargin(new java.awt.Insets(0, 0, 0, 0));
+    btnAddContacts.setMaximumSize(new java.awt.Dimension(50, 50));
+    btnAddContacts.setMinimumSize(new java.awt.Dimension(50, 50));
+    btnAddContacts.setOpaque(false);
+    btnAddContacts.setPreferredSize(new java.awt.Dimension(50, 50));
+    btnAddContacts.addActionListener(new java.awt.event.ActionListener() {
         public void actionPerformed(java.awt.event.ActionEvent evt) {
-            dummyAddFriendActionPerformed(evt);
+            btnAddContactsActionPerformed(evt);
         }
     });
 
-    dummnyGetCon.setText("get con");
-    dummnyGetCon.addActionListener(new java.awt.event.ActionListener() {
-        public void actionPerformed(java.awt.event.ActionEvent evt) {
-            dummnyGetConActionPerformed(evt);
-        }
-    });
+    javax.swing.GroupLayout AddBtnPanelLayout = new javax.swing.GroupLayout(AddBtnPanel);
+    AddBtnPanel.setLayout(AddBtnPanelLayout);
+    AddBtnPanelLayout.setHorizontalGroup(
+        AddBtnPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddBtnPanelLayout.createSequentialGroup()
+            .addComponent(btnAddContacts, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGap(0, 0, Short.MAX_VALUE))
+    );
+    AddBtnPanelLayout.setVerticalGroup(
+        AddBtnPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        .addGroup(AddBtnPanelLayout.createSequentialGroup()
+            .addGap(23, 23, 23)
+            .addComponent(btnAddContacts, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addContainerGap(23, Short.MAX_VALUE))
+    );
 
-    javax.swing.GroupLayout MembersLayout = new javax.swing.GroupLayout(Members);
-    Members.setLayout(MembersLayout);
-    MembersLayout.setHorizontalGroup(
-        MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGroup(MembersLayout.createSequentialGroup()
-            .addGap(43, 43, 43)
-            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                .addComponent(dummyFriendId)
-                .addComponent(dummyFriend))
-            .addGap(18, 18, 18)
-            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                .addComponent(dummyAddFriend, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(dummnyGetCon, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addContainerGap(246, Short.MAX_VALUE))
-    );
-    MembersLayout.setVerticalGroup(
-        MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGroup(MembersLayout.createSequentialGroup()
-            .addContainerGap()
-            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                .addComponent(dummyFriend, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addComponent(dummyAddFriend))
-            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-            .addGroup(MembersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                .addComponent(dummyFriendId, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addComponent(dummnyGetCon))
-            .addContainerGap(28, Short.MAX_VALUE))
-    );
+    Members.add(AddBtnPanel, java.awt.BorderLayout.EAST);
 
     ActionPane.add(Members, java.awt.BorderLayout.CENTER);
 
@@ -519,30 +627,59 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
             Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
+    void setConversation(String str) {
+        ChatArea.setText(str);
+    }
+
     void setStatus(String stt) {
         cbStatus.setSelectedItem(stt);
     }
-    
+
+    void updateFriendStatus(int id, String status) {
+        int selectingIdx = FriendList.getSelectedIndex();
+        ImageJPanel friend = (ImageJPanel) friendModel.getElementAt(id);
+        String imgPath = "";
+        switch (status) {
+            case "ONLINE":
+                imgPath = "/chatapp/res/awake.png";
+                break;
+            case "AWAY":
+                imgPath = "/chatapp/res/away.png";
+                break;
+            case "BUSY":
+                imgPath = "/chatapp/res/busy.png";
+                break;
+            case "HIDDEN":
+                imgPath = "/chatapp/res/sleep.png";
+                break;
+        }
+
+        friend.setIcon(imgPath);
+        friendModel.setElementAt(friend, id);
+//        FriendList.setModel(friendModel);
+//        FriendList.setSelectedIndex(selectingIdx);
+    }
+
     int friendReqOption(Object[] options, PackageFriendRequest request) {
         return JOptionPane.showOptionDialog(this,
-                    "Friend request from " + request.getUserSender(),
-                    "Friend request",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[1]);
+                "Friend request from " + request.getUserSender(),
+                "Friend request",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[1]);
     }
-    
+
     void showDialog(String str) {
         JOptionPane.showMessageDialog(null, str);
     }
-    
+
     void connectionFailed() {
         connected = false;
     }
-    
+
     private boolean checkValid(String name, String pass) {
         if (name.length() == 0 || pass.length() == 0) {
             JOptionPane.showMessageDialog(null,
@@ -551,12 +688,12 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
                     JOptionPane.INFORMATION_MESSAGE);
             return false;
         }
-        
+
         String special = "!@#$%^&*()";
         String pattern = ".*[" + Pattern.quote(special) + "].*";
-        if (name.matches(pattern) 
-                || pass.matches(pattern) 
-                || name.contains(" ") 
+        if (name.matches(pattern)
+                || pass.matches(pattern)
+                || name.contains(" ")
                 || pass.contains(" ")) {
             JOptionPane.showMessageDialog(null,
                     "Username and Password cannot contain special character: !@#$%^&*()",
@@ -566,43 +703,46 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         }
         return true;
     }
-    
+
     private void resetAll() {
         txtInput.setText("");
         ChatArea.setText("");
     }
+
     private String PassToStr(char[] pass) {
         String str = "";
-        for (int i = 0; i < pass.length; i++)
+        for (int i = 0; i < pass.length; i++) {
             str += pass[i];
+        }
         return str;
     }
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         String username = txtUsername.getText().trim();
         String password = PassToStr(txtPassword.getPassword()).trim();
-             
+
         if (checkValid(username, password)) {
             lblYourName.setText(username);
-            
+            connected = true;
             client = new Client(defaultHost, defaultPort, username, password, this);
             client.start();
-            
+
             PackageLogin login = new PackageLogin();
             login.setUsername(username);
             login.setPassword(password);
             client.sendObject(login);
-
-            CardLayout card = (CardLayout) FramePanel.getLayout();
-            card.show(FramePanel, "card2");
-            this.setResizable(true);
         }
     }//GEN-LAST:event_btnLoginActionPerformed
 
     private void btnRegisterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegisterActionPerformed
         String username = txtUsername.getText().trim();
         String password = PassToStr(txtPassword.getPassword()).trim();
-        
+
         if (checkValid(username, password)) {
+            lblYourName.setText(username);
+
+            client = new Client(defaultHost, defaultPort, username, password, this);
+            client.start();
+
             PackageRegister register = new PackageRegister();
             register.setUsername(username);
             register.setPassword(password);
@@ -621,12 +761,26 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     }//GEN-LAST:event_btnLogoutActionPerformed
 
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
-        append(txtInput.getText() + "\n");
-        txtInput.setText("");
-        if (connected) {
-            PackageMessage message = new PackageMessage(client.client_id, Integer.parseInt(dummyFriendId.getText()), txtInput.getText());
-            message.setId_con(client.id_con);
-            client.sendObject(message);
+        int pane = TabbedPanel.getSelectedIndex();
+        if (!(FriendList.getSelectedIndex() == -1 &&
+              PendingList.getSelectedIndex() == -1 &&
+              GroupList.getSelectedIndex() == -1)) {
+            if (txtInput.getText().length() != 0) {
+            append(txtInput.getText() + "\n");
+                if (connected) {
+                    if (pane != 2) {
+                        int friendId;
+                        if (pane == 0)
+                            friendId = client.friends.get(FriendList.getSelectedIndex()).getId();
+                        else
+                            friendId = client.friends.get(PendingList.getSelectedIndex()).getId();
+                        PackageMessage message = new PackageMessage(client.client_id, friendId, txtInput.getText());
+                        message.setId_con(client.id_con);
+                        client.sendObject(message);
+                    }
+                }
+            }
+            txtInput.setText("");
         }
     }//GEN-LAST:event_btnSendActionPerformed
 
@@ -637,15 +791,23 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
         PackageSearchUser search = new PackageSearchUser(txtSearch.getText());
         client.sendObject(search);
+
+        AddBtnPanel.setVisible(true);
+        CardLayout card = (CardLayout) ListCardPanel.getLayout();
+        card.show(ListCardPanel, "list2");
+        
+        isSearching = true;
+        AddBtnPanel.setVisible(true);
     }//GEN-LAST:event_btnSearchActionPerformed
 
     private void cbStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbStatusActionPerformed
-        if (client.friends == null) 
+        if (client.friends == null) {
             return;
-        
+        }
+
         PackageStatus status = new PackageStatus(client.client_id, cbStatus.getSelectedItem().toString());
         client.sendObject(status);
-        
+
         //if the friend_id != 0 you sent it to friends
         for (ChatUser friend : client.friends) {
             status = new PackageStatus(client.client_id, cbStatus.getSelectedItem().toString());
@@ -654,20 +816,61 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         }
     }//GEN-LAST:event_cbStatusActionPerformed
 
-    private void dummyAddFriendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dummyAddFriendActionPerformed
-        PackageFriendRequest request = new PackageFriendRequest(client.client_id, Integer.parseInt(dummyFriend.getText()));
-        request.setRequest(true);
-        client.sendObject(request);
-    }//GEN-LAST:event_dummyAddFriendActionPerformed
+    private void btnSearchReturnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchReturnActionPerformed
+        CardLayout card = (CardLayout) ListCardPanel.getLayout();
+        card.show(ListCardPanel, "list1");
+        
+        isSearching = false;
+        
+        if (TabbedPanel.getSelectedIndex() != 1)
+            AddBtnPanel.setVisible(false);
+    }//GEN-LAST:event_btnSearchReturnActionPerformed
 
-    private void dummnyGetConActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dummnyGetConActionPerformed
-        PackageConversation conversation = new PackageConversation();
-        conversation.setId_userA(client.client_id);
-        conversation.setId_userB(Integer.parseInt(dummyFriendId.getText()));
-        client.sendObject(conversation);
-    }//GEN-LAST:event_dummnyGetConActionPerformed
-   
-    
+    private void FriendListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_FriendListValueChanged
+        if (FriendList.getSelectedIndex() != -1) {
+            ImageJPanel obj = (ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex());
+            int friend_id = obj.getUser().getId();
+
+            PackageConversation conversation = new PackageConversation();
+            conversation.setId_userA(client.client_id);
+            conversation.setId_userB(friend_id);
+            client.sendObject(conversation);
+        }
+    }//GEN-LAST:event_FriendListValueChanged
+
+    private void btnAddContactsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddContactsActionPerformed
+        if (!isSearching) {
+            if (PendingList.getSelectedIndex() != -1) {
+                PackageFriendRequest request = new PackageFriendRequest(client.client_id,
+                    client.pendingFriends.get(PendingList.getSelectedIndex()).getId());
+                request.setRequest(false);
+                request.setAccept(true);
+                client.sendObject(request);
+                
+                PackageFriendList friendList = new PackageFriendList();
+                client.sendObject(friendList);
+            }
+        }
+        else {
+            if (SearchList.getSelectedIndex() != -1) {
+                ImageJPanel obj = (ImageJPanel)searchModel.getElementAt(SearchList.getSelectedIndex());
+                PackageFriendRequest request = new PackageFriendRequest(client.client_id,
+                    obj.getUser().getId());
+                request.setRequest(true);
+                client.sendObject(request);
+            }
+        }
+    }//GEN-LAST:event_btnAddContactsActionPerformed
+
+    private void TabbedPanelStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_TabbedPanelStateChanged
+        if (TabbedPanel.getSelectedIndex() == 1) {
+            AddBtnPanel.setVisible(true);
+        }
+        else {
+            AddBtnPanel.setVisible(false);
+        }
+    }//GEN-LAST:event_TabbedPanelStateChanged
+
     /**
      * @param args the command line arguments
      */
@@ -715,11 +918,15 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ActionPane;
     private javax.swing.JPanel Actions;
+    private javax.swing.JPanel AddBtnPanel;
     private javax.swing.JTextPane ChatArea;
+    private javax.swing.JPanel ContactInfoPanel;
     private javax.swing.JPanel FramePanel;
     private javax.swing.JList<String> FriendList;
+    private javax.swing.JList<String> GroupList;
     private javax.swing.JPanel InputPanel;
     private javax.swing.JPanel LeftFrame;
+    private javax.swing.JPanel ListCardPanel;
     private javax.swing.JPanel ListPane;
     private javax.swing.JPanel LoginArea;
     private javax.swing.JPanel LoginPanel;
@@ -727,10 +934,15 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JPanel LogoPanel;
     private javax.swing.JPanel MainScreen;
     private javax.swing.JPanel Members;
+    private javax.swing.JList<String> PendingList;
     private javax.swing.JPanel RightFrame;
+    private javax.swing.JList<String> SearchList;
     private javax.swing.JPanel SearchPanel;
+    private javax.swing.JPanel SearchResult;
     private javax.swing.JPanel SendFuncs;
     private javax.swing.JPanel StatusPane;
+    private javax.swing.JTabbedPane TabbedPanel;
+    private javax.swing.JButton btnAddContacts;
     private javax.swing.JButton btnCreateGroup;
     private javax.swing.JButton btnFile;
     private javax.swing.JButton btnImage;
@@ -738,15 +950,15 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JButton btnLogout;
     private javax.swing.JButton btnRegister;
     private javax.swing.JButton btnSearch;
+    private javax.swing.JButton btnSearchReturn;
     private javax.swing.JButton btnSend;
     private javax.swing.JButton btnStream;
     private javax.swing.JComboBox<String> cbStatus;
-    private javax.swing.JButton dummnyGetCon;
-    private javax.swing.JButton dummyAddFriend;
-    private javax.swing.JTextField dummyFriend;
-    private javax.swing.JTextField dummyFriendId;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JSplitPane jSplitPane2;
     private javax.swing.JLabel lblLogo;
     private javax.swing.JLabel lblPassword;
@@ -763,7 +975,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
         @Override
         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-            JPanel renderer = (JPanel) value;
+            ImageJPanel renderer = (ImageJPanel) value;
             renderer.setBackground(isSelected ? Color.green : Color.white);
             return renderer;
         }
