@@ -16,14 +16,14 @@ import javax.swing.JPanel;
  * @author Long
  */
 public class ImageJPanel extends JPanel{
-    ChatUser user;
+    Object user;
     JLabel label;
 
-    public ChatUser getUser() {
+    public Object getUser() {
         return user;
     }
 
-    public void setUser(ChatUser user) {
+    public void setUser(Object user) {
         this.user = user;
     }
 
@@ -35,7 +35,7 @@ public class ImageJPanel extends JPanel{
         this.label = label;
     }
     
-    ImageJPanel(String txt, String imgPath, ChatUser user) {
+    ImageJPanel(String txt, String imgPath, Object user) {
         this.user = user;
         label = new JLabel();
         label.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()

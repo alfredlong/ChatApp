@@ -5,28 +5,18 @@
  */
 package chatapp;
 
-import chatpackage.ChatPackage;
-import chatpackage.ChatUser;
-import chatpackage.PackageConversation;
-import chatpackage.PackageFriendList;
-import chatpackage.PackageFriendRequest;
-import chatpackage.PackageLogin;
-import chatpackage.PackageMessage;
-import chatpackage.PackageRegister;
-import chatpackage.PackageSearchUser;
-import chatpackage.PackageStatus;
+import chatpackage.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
-import static java.lang.Math.log;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.*;
-import javax.swing.JOptionPane;
-import static sun.util.logging.LoggingSupport.log;
 
 /**
  *
@@ -45,8 +35,12 @@ public class Client {
     private String server, username, password;
     private int port;
 
-    ArrayList<ChatUser> friends;
-    ArrayList<ChatUser> pendingFriends;
+    HashMap<String, ChatUser> friends;
+    HashMap<String, ChatUser> pendingFriends;
+    HashMap<String, GroupConversation> groupConversations;
+
+    HashMap<String, String> pCon;
+    HashMap<String, String> grCon;
 
     int client_id;
     String client_username;
@@ -66,7 +60,6 @@ public class Client {
     }
 
     void disconnect() {
-        
         try {
             if (sInput != null) {
                 sInput.close();
@@ -105,6 +98,12 @@ public class Client {
     }
 
     public void start() {
+        pCon = new HashMap<>();
+        grCon = new HashMap<>();
+        friends = new HashMap<>();
+        pendingFriends = new HashMap<>();
+        groupConversations = new HashMap<>();
+        
         try {
             socket = new Socket(server, port);
         } catch (IOException ex) {
@@ -121,7 +120,16 @@ public class Client {
         }
 
         // creates the Thread to listen from the server
-        new ListenFromServer().start();
+        Thread.UncaughtExceptionHandler h = new Thread.UncaughtExceptionHandler() {
+            public void uncaughtException(Thread th, Throwable ex) {
+                return;
+            }
+        };
+
+        ListenFromServer listener = new ListenFromServer();
+        Thread thread = new Thread(listener);
+        thread.setUncaughtExceptionHandler(h);
+        thread.start();
     }
 
     void sendObject(Object obj) {
@@ -132,19 +140,23 @@ public class Client {
         }
     }
 
-    class ListenFromServer extends Thread {
+    class ListenFromServer implements Runnable {
 
         @Override
         public void run() {
             while (true) {
+
+                if (socket.isClosed()) {
+                    break;
+                }
+
                 ChatPackage inputPackage = null;
 
                 try {
                     inputPackage = (ChatPackage) sInput.readObject();
                 } catch (IOException | ClassNotFoundException ex) {
-                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                    //Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                 }
-
                 analyseInput(inputPackage);
             }
         }
@@ -176,12 +188,15 @@ public class Client {
             case "MESSAGE":
                 PackageMessageProcess(inputPackage);
                 break;
+            case "GROUP_CONVERSATION":
+                PackageGroupConversationProcess(inputPackage);
+                break;
             default:
                 break;
 
         }
     }
-    
+
     private void PackageLoginProcess(ChatPackage inputPackage) {
         PackageLogin login = (PackageLogin) inputPackage;
         if (login.isConfirm()) {
@@ -193,7 +208,10 @@ public class Client {
 
             PackageFriendList friendList = new PackageFriendList();
             sendObject(friendList);
-            
+
+            PackageStatus status = new PackageStatus(client_id, login.getUser().getStatus());
+            sendObject(status);
+
             cg.LoginToMainScr();
         } else {
             cg.showDialog("Account does not exist");
@@ -214,11 +232,36 @@ public class Client {
     }
 
     private void PackageFriendListProcess(ChatPackage inputPackage) {
-        PackageFriendList friendList = (PackageFriendList) inputPackage;
-        friends = friendList.getFriends();
-        pendingFriends = friendList.getPendingFriends();
+        friends.clear();
+        pendingFriends.clear();
         
+        PackageFriendList friendList = (PackageFriendList) inputPackage;
+        ArrayList<ChatUser> f = friendList.getFriends();
+        ArrayList<ChatUser> pf = friendList.getPendingFriends();
+        
+        for (ChatUser u : f) {
+            friends.put(String.valueOf(u.getId()), u);
+            
+            PackageConversation conversation = new PackageConversation();
+            conversation.setId_userA(client_id);
+            conversation.setId_userB(u.getId());
+            sendObject(conversation);
+        } 
+        
+        for (ChatUser u : pf) {
+            pendingFriends.put(String.valueOf(u.getId()), u);
+            
+            PackageConversation conversation = new PackageConversation();
+            conversation.setId_userA(client_id);
+            conversation.setId_userB(u.getId());
+            sendObject(conversation);
+        }
+
         cg.initFriendList();
+        
+        PackageGroupConversation conver = new PackageGroupConversation();
+        conver.setAction("CONVERSATION");
+        sendObject(conver);
     }
 
     private void PackageConversationProcess(ChatPackage inputPackage) {
@@ -227,10 +270,17 @@ public class Client {
         ArrayList<chatpackage.ChatMessage> conversation = con.getConversation();
         String text = "";
         for (int i = 0; i < conversation.size(); i++) {
-            text += conversation.get(i).getSender() + ":" + conversation.get(i).getMessage() + "\n";
+            String name = "";
+            if (conversation.get(i).getSender() != client_id)
+                name = friends.get(String.valueOf(conversation.get(i).getSender()))
+                    .getUsername();
+            else
+                name = client_username;
+            text += name + ": " + conversation.get(i).getContent() + "\n";
         }
-        cg.setConversation(text);
-        System.out.println(text);
+
+        pCon.put(String.valueOf(con.getId_userB()), text);
+        //cg.setConversation(text);
     }
 
     private void PackageSearchUserProcess(ChatPackage inputPackage) {
@@ -264,16 +314,8 @@ public class Client {
 
     private void PackageStatusProcess(ChatPackage inputPackage) {
         PackageStatus status = (PackageStatus) inputPackage;
-
-        if (status.getFriend_id() == client_id) {
-            cg.showDialog("FRIEND IS " + status.getStatus());
-            for (int i = 0; i < friends.size(); i++) {
-                if (friends.get(i).getId() == status.getId()) {
-                    friends.get(i).setStatus(status.getStatus());
-                    cg.updateFriendStatus(i, status.getStatus());
-                }
-            }
-        }
+        cg.showDialog("FRIEND IS " + status.getStatus());
+        cg.updateFriendStatus(status.getId(), status.getStatus());
     }
 
     private void PackageMessageProcess(ChatPackage inputPackage) {
@@ -281,9 +323,82 @@ public class Client {
 
         String text = "";
         if (message.getReceiver() == client_id) {
-            text += message.getSender() + ":" + message.getMessage().getMessage() + "\n";
+            String senderName = friends.get(String.valueOf(message.getSender())).getUsername();
+            if (senderName == null)
+                senderName = pendingFriends.get(String.valueOf(message.getSender())).getUsername();
+            
+            text += senderName + ": " + message.getMessage().getContent() + "\n";
         }
-        cg.append(text);
-        System.out.println(text);
+
+        if (cg.getSelectingTab() == 0) {
+            if (cg.getSelectingFriend() == message.getSender()) {
+                cg.append(text);
+            }
+        } else if (cg.getSelectingTab() == 1) {
+            if (cg.getSelectingPendingFriend() == message.getSender()) {
+                cg.append(text);
+            }
+        } else if (cg.getSelectingGroup() == message.getId_con()) {
+            cg.append(text);
+        }
+
+        if (!message.isGroupMessage()) {
+            pCon.put(String.valueOf(message.getSender()),
+                    pCon.get(String.valueOf(message.getSender())) + text);
+        } else {
+            grCon.put(String.valueOf(message.getId_con()),
+                    grCon.get(String.valueOf(message.getId_con())) + text);
+        }
+    }
+
+    private void PackageGroupConversationProcess(ChatPackage inputPackage) {
+        groupConversations.clear();
+        PackageGroupConversation conver = (PackageGroupConversation) inputPackage;
+        switch (conver.getAction()) {
+            case "CONVERSATION":
+                ArrayList<GroupConversation> convers = conver.getList_con();
+                for (GroupConversation cv : convers) {
+                    groupConversations.put(cv.getId_con(), cv);
+                }
+                
+                for (GroupConversation gr : convers) {
+                    String text = "";
+
+                    for (ChatMessage msg : gr.getConversation()) {
+                        String name = "";
+                        for (ChatUser user : gr.getList_user()) {
+                            if (msg.getSender() == user.getId()) {
+                                name = user.getUsername();
+                                break;
+                            }
+                        }
+                        text += name + ": " + msg.getContent() + "\n";
+                    }
+                    grCon.put(gr.getId_con(), text);
+                }
+                cg.initGroups();
+                break;
+            case "CREATE":            
+                cg.addGroup(conver.getId_con(), conver.getName());
+                break;
+            case "RENAME":
+                
+                break;
+            case "ADD":
+                //cg.addToModel();
+                break;
+            case "KICK":
+               
+                break;
+            case "LEAVE":
+               
+                break;
+            case "PASS_MASTER":
+              
+                break;
+            case "DELETE":
+               
+                break;
+        }
     }
 }

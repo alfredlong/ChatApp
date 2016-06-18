@@ -9,21 +9,20 @@ import chatpackage.*;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.FlowLayout;
+import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
-import javax.swing.JLabel;
+import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
@@ -37,14 +36,15 @@ public class ClientGUI extends javax.swing.JFrame {
     private static final long serialVersionUID = 1L;
     private boolean connected;
     private Client client;
-    private int defaultPort;
-    private String defaultHost;
+    private int defaultPort = 2833;
+    private String defaultHost = "localhost";
     private boolean isSearching = false;
 
     DefaultListModel friendModel;
     DefaultListModel pendingModel;
     DefaultListModel groupModel;
     DefaultListModel searchModel;
+    DefaultListModel addModel;
 
     /**
      * Creates new form MainScreen
@@ -56,6 +56,25 @@ public class ClientGUI extends javax.swing.JFrame {
                 .getScaledInstance(width, height, Image.SCALE_SMOOTH));
     }
 
+    public int getSelectingTab() {
+        return TabbedPanel.getSelectedIndex();
+    }
+
+    public int getSelectingFriend() {
+        return ((ChatUser) ((ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex())).getUser())
+                .getId();
+    }
+
+    public int getSelectingPendingFriend() {
+        return ((ChatUser) ((ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex())).getUser())
+                .getId();
+    }
+
+    public String getSelectingGroup() {
+        return ((GroupConversation) ((ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex())).getUser())
+                .getId_con();
+    }
+
     public void LoginToMainScr() {
         CardLayout card = (CardLayout) FramePanel.getLayout();
         card.show(FramePanel, "card2");
@@ -64,25 +83,25 @@ public class ClientGUI extends javax.swing.JFrame {
 
     public void initSearchList(ArrayList<ChatUser> search_user_list) {
         searchModel = new DefaultListModel();
-                
+
         String imgPath = "/chatapp/res/stranger.png";
         for (ChatUser user : search_user_list) {
             searchModel.addElement(new ImageJPanel(user.getUsername(), imgPath, user));
         }
-        
+
         SearchList.setModel(searchModel);
         SearchList.setCellRenderer(new PanelRenderer());
         SearchList.validate();
     }
-    
+
     public void initFriendList() {
         friendModel = new DefaultListModel();
         pendingModel = new DefaultListModel();
-        
-        for (ChatUser friend : client.friends) {
+
+        for (Map.Entry<String, ChatUser> entry : client.friends.entrySet()) {
             String imgPath = "";
-            if (friend.isOnline()) {
-                switch (friend.getStatus()) {
+            if (entry.getValue().isOnline()) {
+                switch (entry.getValue().getStatus()) {
                     case "ONLINE":
                         imgPath = "/chatapp/res/awake.png";
                         break;
@@ -93,18 +112,19 @@ public class ClientGUI extends javax.swing.JFrame {
                         imgPath = "/chatapp/res/busy.png";
                         break;
                     case "HIDDEN":
+                    case "OFFLINE":
                         imgPath = "/chatapp/res/sleep.png";
                         break;
                 }
             } else {
                 imgPath = "/chatapp/res/sleep.png";
             }
-            friendModel.addElement(new ImageJPanel(friend.getUsername(), imgPath, friend));
+            friendModel.addElement(new ImageJPanel(entry.getValue().getUsername(), imgPath, entry.getValue()));
         }
 
-        for (ChatUser friend : client.pendingFriends) {
+        for (Map.Entry<String, ChatUser> entry : client.pendingFriends.entrySet()) {
             String imgPath = "/chatapp/res/stranger.png";
-            pendingModel.addElement(new ImageJPanel(friend.getUsername(), imgPath, friend));
+            pendingModel.addElement(new ImageJPanel(entry.getValue().getUsername(), imgPath, entry.getValue()));
         }
 
         FriendList.setModel(friendModel);
@@ -116,14 +136,31 @@ public class ClientGUI extends javax.swing.JFrame {
         PendingList.validate();
     }
 
-    public ClientGUI(String host, int port) {
-        defaultHost = host;
-        defaultPort = port;
+    public void addGroup(String id, String name) {
+        GroupConversation gr = new GroupConversation();
+        gr.setId_con(id);
+        gr.setName(name);
+        String imgPath = "/chatapp/res/group.png";
+        groupModel.addElement(new ImageJPanel(name, imgPath, gr));
+    }
+
+    public void initGroups() {
+        groupModel = new DefaultListModel();
+
+        for (Map.Entry<String, GroupConversation> entry : client.groupConversations.entrySet()) {
+            String imgPath = "/chatapp/res/group.png";
+            groupModel.addElement(new ImageJPanel(entry.getValue().getName(), imgPath, entry.getValue()));
+        }
+
+        GroupList.setModel(groupModel);
+        GroupList.setCellRenderer(new PanelRenderer());
+        GroupList.validate();
+    }
+
+    public ClientGUI() {
         this.setResizable(false);
 
         initComponents();
-
-        groupModel = new DefaultListModel();
 
         lblLogo.setIcon(getImage("/chatapp/res/logo.png",
                 lblLogo.getWidth(),
@@ -131,11 +168,14 @@ public class ClientGUI extends javax.swing.JFrame {
         lblYourAvatar.setIcon(getImage("/chatapp/res/avatar.png",
                 lblYourAvatar.getWidth(),
                 lblYourAvatar.getHeight()));
-        AddBtnPanel.setVisible(false);
-        
+        btnAddContacts.setVisible(false);
+        btnGroupFunction.setVisible(false);
+
         this.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
-                client.disconnect();
+                if (connected) {
+                    client.disconnect();
+                }
             }
         });
     }
@@ -149,6 +189,16 @@ public class ClientGUI extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        PopupSetting = new javax.swing.JPopupMenu();
+        iViewMembers = new javax.swing.JMenuItem();
+        iRename = new javax.swing.JMenuItem();
+        iKick = new javax.swing.JMenuItem();
+        iLeave = new javax.swing.JMenuItem();
+        AddToGroupPanel = new javax.swing.JPanel();
+        jScrollPane6 = new javax.swing.JScrollPane();
+        AddList = new javax.swing.JList<>();
+        jPanel1 = new javax.swing.JPanel();
+        btnAddToGroup = new javax.swing.JButton();
         FramePanel = new javax.swing.JPanel();
         LoginScreen = new javax.swing.JPanel();
         LogoPanel = new javax.swing.JPanel();
@@ -161,6 +211,8 @@ public class ClientGUI extends javax.swing.JFrame {
         lblUsername = new javax.swing.JLabel();
         lblPassword = new javax.swing.JLabel();
         txtPassword = new javax.swing.JPasswordField();
+        txtAddress = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
         MainScreen = new javax.swing.JPanel();
         jSplitPane2 = new javax.swing.JSplitPane();
         LeftFrame = new javax.swing.JPanel();
@@ -188,9 +240,9 @@ public class ClientGUI extends javax.swing.JFrame {
         ActionPane = new javax.swing.JPanel();
         Members = new javax.swing.JPanel();
         ContactInfoPanel = new javax.swing.JPanel();
-        AddBtnPanel = new javax.swing.JPanel();
-        btnAddContacts = new javax.swing.JButton();
         Actions = new javax.swing.JPanel();
+        btnGroupFunction = new javax.swing.JButton();
+        btnAddContacts = new javax.swing.JButton();
         btnStream = new javax.swing.JButton();
         btnCreateGroup = new javax.swing.JButton();
         btnLogout = new javax.swing.JButton();
@@ -202,6 +254,63 @@ public class ClientGUI extends javax.swing.JFrame {
         btnSend = new javax.swing.JButton();
         jScrollPane3 = new javax.swing.JScrollPane();
         ChatArea = new javax.swing.JTextPane();
+
+        iViewMembers.setText("View members");
+        iViewMembers.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                iViewMembersActionPerformed(evt);
+            }
+        });
+        PopupSetting.add(iViewMembers);
+
+        iRename.setText("Rename group");
+        iRename.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                iRenameActionPerformed(evt);
+            }
+        });
+        PopupSetting.add(iRename);
+
+        iKick.setText("Remove member");
+        iKick.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                iKickActionPerformed(evt);
+            }
+        });
+        PopupSetting.add(iKick);
+
+        iLeave.setText("Leave group");
+        iLeave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                iLeaveActionPerformed(evt);
+            }
+        });
+        PopupSetting.add(iLeave);
+
+        AddToGroupPanel.setLayout(new java.awt.BorderLayout());
+
+        AddList.setModel(new javax.swing.AbstractListModel<String>() {
+            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
+            public int getSize() { return strings.length; }
+            public String getElementAt(int i) { return strings[i]; }
+        });
+        jScrollPane6.setViewportView(AddList);
+
+        AddToGroupPanel.add(jScrollPane6, java.awt.BorderLayout.CENTER);
+
+        jPanel1.setLayout(new java.awt.BorderLayout());
+
+        btnAddToGroup.setText("Add");
+        btnAddToGroup.setMaximumSize(new java.awt.Dimension(60, 30));
+        btnAddToGroup.setMinimumSize(new java.awt.Dimension(60, 30));
+        btnAddToGroup.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAddToGroupActionPerformed(evt);
+            }
+        });
+        jPanel1.add(btnAddToGroup, java.awt.BorderLayout.CENTER);
+
+        AddToGroupPanel.add(jPanel1, java.awt.BorderLayout.SOUTH);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Live Chat!");
@@ -309,7 +418,14 @@ public class ClientGUI extends javax.swing.JFrame {
                     .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
 
-        LoginPanel.add(LoginArea, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 90, -1, -1));
+        LoginPanel.add(LoginArea, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 130, -1, -1));
+
+        txtAddress.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        LoginPanel.add(txtAddress, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 90, 210, -1));
+
+        jLabel1.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jLabel1.setText("IP Address:");
+        LoginPanel.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 70, -1, -1));
 
         LoginScreen.add(LoginPanel, java.awt.BorderLayout.CENTER);
 
@@ -333,11 +449,11 @@ public class ClientGUI extends javax.swing.JFrame {
         StatusPane.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         lblYourAvatar.setText("Image");
-        StatusPane.add(lblYourAvatar, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 10, 60, 60));
+        StatusPane.add(lblYourAvatar, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 10, 70, 70));
 
         lblYourName.setFont(new java.awt.Font("Tahoma", 1, 12)); // NOI18N
         lblYourName.setText("Your name");
-        StatusPane.add(lblYourName, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 20, -1, -1));
+        StatusPane.add(lblYourName, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 20, -1, -1));
 
         cbStatus.setFont(new java.awt.Font("Tahoma", 0, 10)); // NOI18N
         cbStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ONLINE", "AWAY", "BUSY", "HIDDEN" }));
@@ -346,7 +462,7 @@ public class ClientGUI extends javax.swing.JFrame {
                 cbStatusActionPerformed(evt);
             }
         });
-        StatusPane.add(cbStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 40, 80, 20));
+        StatusPane.add(cbStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 40, 80, 20));
 
         LeftFrame.add(StatusPane, java.awt.BorderLayout.PAGE_START);
 
@@ -398,6 +514,11 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     jScrollPane2.setBackground(new java.awt.Color(140, 198, 62));
 
     PendingList.setFixedCellHeight(30);
+    PendingList.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+        public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+            PendingListValueChanged(evt);
+        }
+    });
     jScrollPane2.setViewportView(PendingList);
 
     TabbedPanel.addTab("Pending", jScrollPane2);
@@ -405,6 +526,11 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     jScrollPane4.setBackground(new java.awt.Color(140, 198, 62));
 
     GroupList.setFixedCellHeight(30);
+    GroupList.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
+        public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
+            GroupListValueChanged(evt);
+        }
+    });
     jScrollPane4.setViewportView(GroupList);
 
     TabbedPanel.addTab("Groups", jScrollPane4);
@@ -459,7 +585,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     ContactInfoPanel.setLayout(ContactInfoPanelLayout);
     ContactInfoPanelLayout.setHorizontalGroup(
         ContactInfoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGap(0, 383, Short.MAX_VALUE)
+        .addGap(0, 0, Short.MAX_VALUE)
     );
     ContactInfoPanelLayout.setVerticalGroup(
         ContactInfoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -468,9 +594,29 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
     Members.add(ContactInfoPanel, java.awt.BorderLayout.CENTER);
 
-    AddBtnPanel.setBackground(new java.awt.Color(140, 198, 62));
-    AddBtnPanel.setMaximumSize(new java.awt.Dimension(50, 50));
-    AddBtnPanel.setPreferredSize(new java.awt.Dimension(50, 50));
+    ActionPane.add(Members, java.awt.BorderLayout.CENTER);
+
+    Actions.setBackground(new java.awt.Color(140, 198, 62));
+    Actions.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 5, 1, 5));
+    Actions.setMaximumSize(new java.awt.Dimension(360, 52));
+    Actions.setMinimumSize(new java.awt.Dimension(360, 52));
+    Actions.setLayout(new javax.swing.BoxLayout(Actions, javax.swing.BoxLayout.LINE_AXIS));
+
+    btnGroupFunction.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/settings.png"))
+    .getImage()
+    .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
+    btnGroupFunction.setBorder(null);
+    btnGroupFunction.setMaximumSize(new java.awt.Dimension(50, 50));
+    btnGroupFunction.setMinimumSize(new java.awt.Dimension(50, 50));
+    btnGroupFunction.setOpaque(false);
+    btnGroupFunction.setPreferredSize(new java.awt.Dimension(50, 50));
+    btnGroupFunction.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnGroupFunctionActionPerformed(evt);
+        }
+    });
+    Actions.add(btnGroupFunction);
 
     btnAddContacts.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
         .getResource("/chatapp/res/add-contacts.png"))
@@ -478,7 +624,6 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
     btnAddContacts.setBorder(null);
     btnAddContacts.setBorderPainted(false);
-    btnAddContacts.setMargin(new java.awt.Insets(0, 0, 0, 0));
     btnAddContacts.setMaximumSize(new java.awt.Dimension(50, 50));
     btnAddContacts.setMinimumSize(new java.awt.Dimension(50, 50));
     btnAddContacts.setOpaque(false);
@@ -488,35 +633,13 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
             btnAddContactsActionPerformed(evt);
         }
     });
-
-    javax.swing.GroupLayout AddBtnPanelLayout = new javax.swing.GroupLayout(AddBtnPanel);
-    AddBtnPanel.setLayout(AddBtnPanelLayout);
-    AddBtnPanelLayout.setHorizontalGroup(
-        AddBtnPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddBtnPanelLayout.createSequentialGroup()
-            .addComponent(btnAddContacts, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addGap(0, 0, Short.MAX_VALUE))
-    );
-    AddBtnPanelLayout.setVerticalGroup(
-        AddBtnPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-        .addGroup(AddBtnPanelLayout.createSequentialGroup()
-            .addGap(23, 23, 23)
-            .addComponent(btnAddContacts, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-            .addContainerGap(23, Short.MAX_VALUE))
-    );
-
-    Members.add(AddBtnPanel, java.awt.BorderLayout.EAST);
-
-    ActionPane.add(Members, java.awt.BorderLayout.CENTER);
-
-    Actions.setBackground(new java.awt.Color(140, 198, 62));
-    Actions.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 5, 1, 5));
-    Actions.setLayout(new javax.swing.BoxLayout(Actions, javax.swing.BoxLayout.LINE_AXIS));
+    Actions.add(btnAddContacts);
 
     btnStream.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
         .getResource("/chatapp/res/video-chat.png"))
     .getImage()
     .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
+    btnStream.setBorder(null);
     btnStream.setMaximumSize(new java.awt.Dimension(50, 50));
     btnStream.setMinimumSize(new java.awt.Dimension(50, 50));
     btnStream.setOpaque(false);
@@ -527,15 +650,22 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         .getResource("/chatapp/res/add-group.png"))
     .getImage()
     .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
+    btnCreateGroup.setBorder(null);
     btnCreateGroup.setMaximumSize(new java.awt.Dimension(50, 50));
     btnCreateGroup.setMinimumSize(new java.awt.Dimension(50, 50));
     btnCreateGroup.setPreferredSize(new java.awt.Dimension(50, 50));
+    btnCreateGroup.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnCreateGroupActionPerformed(evt);
+        }
+    });
     Actions.add(btnCreateGroup);
 
     btnLogout.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
         .getResource("/chatapp/res/logout.png"))
     .getImage()
     .getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
+    btnLogout.setBorder(null);
     btnLogout.setMaximumSize(new java.awt.Dimension(50, 50));
     btnLogout.setMinimumSize(new java.awt.Dimension(50, 50));
     btnLogout.setPreferredSize(new java.awt.Dimension(50, 50));
@@ -638,7 +768,16 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
     void updateFriendStatus(int id, String status) {
         int selectingIdx = FriendList.getSelectedIndex();
-        ImageJPanel friend = (ImageJPanel) friendModel.getElementAt(id);
+
+        int pos = 0;
+        for (int i = 0; i < friendModel.size(); i++) {
+            ImageJPanel pane = (ImageJPanel) friendModel.getElementAt(i);
+            int curId = ((ChatUser) pane.getUser()).getId();
+            if (curId == id) {
+                pos = i;
+            }
+        }
+        ImageJPanel friend = (ImageJPanel) friendModel.getElementAt(pos);
         String imgPath = "";
         switch (status) {
             case "ONLINE":
@@ -651,14 +790,13 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
                 imgPath = "/chatapp/res/busy.png";
                 break;
             case "HIDDEN":
+            case "OFFLINE":
                 imgPath = "/chatapp/res/sleep.png";
                 break;
         }
 
         friend.setIcon(imgPath);
-        friendModel.setElementAt(friend, id);
-//        FriendList.setModel(friendModel);
-//        FriendList.setSelectedIndex(selectingIdx);
+        friendModel.setElementAt(friend, pos);
     }
 
     int friendReqOption(Object[] options, PackageFriendRequest request) {
@@ -721,9 +859,15 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         String password = PassToStr(txtPassword.getPassword()).trim();
 
         if (checkValid(username, password)) {
+            String host = "";
+            if (txtAddress.getText() != "")
+                host = txtAddress.getText();
+            else
+                host = defaultHost;
+                
             lblYourName.setText(username);
             connected = true;
-            client = new Client(defaultHost, defaultPort, username, password, this);
+            client = new Client(host, defaultPort, username, password, this);
             client.start();
 
             PackageLogin login = new PackageLogin();
@@ -752,6 +896,10 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     }//GEN-LAST:event_btnRegisterActionPerformed
 
     private void btnLogoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogoutActionPerformed
+        PackageLogout logout = new PackageLogout();
+        logout.setId(client.client_id);
+        client.sendObject(logout);
+
         client.disconnect();
         resetAll();
         CardLayout card = (CardLayout) FramePanel.getLayout();
@@ -762,21 +910,39 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
     private void btnSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendActionPerformed
         int pane = TabbedPanel.getSelectedIndex();
-        if (!(FriendList.getSelectedIndex() == -1 &&
-              PendingList.getSelectedIndex() == -1 &&
-              GroupList.getSelectedIndex() == -1)) {
+        if (!(FriendList.getSelectedIndex() == -1
+                && PendingList.getSelectedIndex() == -1
+                && GroupList.getSelectedIndex() == -1)) {
             if (txtInput.getText().length() != 0) {
-            append(txtInput.getText() + "\n");
+                append(client.client_username + ": " + txtInput.getText() + "\n");
                 if (connected) {
                     if (pane != 2) {
                         int friendId;
-                        if (pane == 0)
-                            friendId = client.friends.get(FriendList.getSelectedIndex()).getId();
-                        else
-                            friendId = client.friends.get(PendingList.getSelectedIndex()).getId();
+                        if (pane == 0) {
+                            friendId = ((ChatUser) ((ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex()))
+                                    .getUser())
+                                    .getId();
+                        } else {
+                            friendId = ((ChatUser) ((ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex()))
+                                    .getUser())
+                                    .getId();
+                        }
                         PackageMessage message = new PackageMessage(client.client_id, friendId, txtInput.getText());
                         message.setId_con(client.id_con);
                         client.sendObject(message);
+
+                        client.pCon.put(String.valueOf(friendId),
+                                client.pCon.get(String.valueOf(friendId))
+                                + String.valueOf(friendId) + ": " + txtInput.getText() + "\n");
+                    } else {
+                        String receiver = ((GroupConversation) (((ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex())).getUser()))
+                                .getId_con();
+                        PackageMessage message = new PackageMessage(client.client_id, receiver, txtInput.getText());
+                        client.sendObject(message);
+
+                        client.grCon.put(String.valueOf(receiver),
+                                client.grCon.get(String.valueOf(receiver))
+                                + String.valueOf(receiver) + ": " + txtInput.getText() + "\n");
                     }
                 }
             }
@@ -792,84 +958,186 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         PackageSearchUser search = new PackageSearchUser(txtSearch.getText());
         client.sendObject(search);
 
-        AddBtnPanel.setVisible(true);
+        btnAddContacts.setVisible(true);
         CardLayout card = (CardLayout) ListCardPanel.getLayout();
         card.show(ListCardPanel, "list2");
-        
+
         isSearching = true;
-        AddBtnPanel.setVisible(true);
+        btnAddContacts.setVisible(true);
     }//GEN-LAST:event_btnSearchActionPerformed
 
     private void cbStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbStatusActionPerformed
-        if (client.friends == null) {
+        if (client.friends.size() == 0) {
             return;
         }
 
         PackageStatus status = new PackageStatus(client.client_id, cbStatus.getSelectedItem().toString());
         client.sendObject(status);
-
-        //if the friend_id != 0 you sent it to friends
-        for (ChatUser friend : client.friends) {
-            status = new PackageStatus(client.client_id, cbStatus.getSelectedItem().toString());
-            status.setFriend_id(friend.getId());
-            client.sendObject(status);
-        }
     }//GEN-LAST:event_cbStatusActionPerformed
 
     private void btnSearchReturnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchReturnActionPerformed
         CardLayout card = (CardLayout) ListCardPanel.getLayout();
         card.show(ListCardPanel, "list1");
-        
+
         isSearching = false;
-        
-        if (TabbedPanel.getSelectedIndex() != 1)
-            AddBtnPanel.setVisible(false);
+
+        if (TabbedPanel.getSelectedIndex() != 1) {
+            btnAddContacts.setVisible(false);
+        }
     }//GEN-LAST:event_btnSearchReturnActionPerformed
 
     private void FriendListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_FriendListValueChanged
         if (FriendList.getSelectedIndex() != -1) {
             ImageJPanel obj = (ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex());
-            int friend_id = obj.getUser().getId();
+            int friend_id = ((ChatUser) obj.getUser()).getId();
 
-            PackageConversation conversation = new PackageConversation();
-            conversation.setId_userA(client.client_id);
-            conversation.setId_userB(friend_id);
-            client.sendObject(conversation);
+            setConversation(client.pCon.get(String.valueOf(friend_id)));
         }
     }//GEN-LAST:event_FriendListValueChanged
 
     private void btnAddContactsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddContactsActionPerformed
         if (!isSearching) {
-            if (PendingList.getSelectedIndex() != -1) {
-                PackageFriendRequest request = new PackageFriendRequest(client.client_id,
-                    client.pendingFriends.get(PendingList.getSelectedIndex()).getId());
-                request.setRequest(false);
-                request.setAccept(true);
-                client.sendObject(request);
-                
-                PackageFriendList friendList = new PackageFriendList();
-                client.sendObject(friendList);
+            if (TabbedPanel.getSelectedIndex() == 1) {
+                if (PendingList.getSelectedIndex() != -1) {
+                    PackageFriendRequest request = new PackageFriendRequest(client.client_id,
+                            client.pendingFriends.get(PendingList.getSelectedIndex()).getId());
+                    request.setRequest(false);
+                    request.setAccept(true);
+                    client.sendObject(request);
+
+                    PackageFriendList friendList = new PackageFriendList();
+                    client.sendObject(friendList);
+                }
+            } else if (GroupList.getSelectedIndex() != -1) {
+                JFrame frame = new JFrame();
+
+                addModel = new DefaultListModel();
+
+                for (Map.Entry<String, ChatUser> entry : client.friends.entrySet()) {
+                    String imgPath = "";
+                    if (entry.getValue().isOnline()) {
+                        switch (entry.getValue().getStatus()) {
+                            case "ONLINE":
+                                imgPath = "/chatapp/res/awake.png";
+                                break;
+                            case "AWAY":
+                                imgPath = "/chatapp/res/away.png";
+                                break;
+                            case "BUSY":
+                                imgPath = "/chatapp/res/busy.png";
+                                break;
+                            case "HIDDEN":
+                            case "OFFLINE":
+                                imgPath = "/chatapp/res/sleep.png";
+                                break;
+                        }
+                    } else {
+                        imgPath = "/chatapp/res/sleep.png";
+                    }
+                    addModel.addElement(new ImageJPanel(entry.getValue().getUsername(), imgPath, entry.getValue()));
+                }
+
+                AddList.setModel(addModel);
+                AddList.setCellRenderer(new PanelRenderer());
+                AddList.validate();
+
+                frame.add(AddToGroupPanel);
+                frame.setTitle("Add new members");
+                frame.setMinimumSize(new Dimension(200, 300));
+                frame.setVisible(true);
             }
-        }
-        else {
-            if (SearchList.getSelectedIndex() != -1) {
-                ImageJPanel obj = (ImageJPanel)searchModel.getElementAt(SearchList.getSelectedIndex());
-                PackageFriendRequest request = new PackageFriendRequest(client.client_id,
-                    obj.getUser().getId());
-                request.setRequest(true);
-                client.sendObject(request);
-            }
+        } else if (SearchList.getSelectedIndex() != -1) {
+            ImageJPanel obj = (ImageJPanel) searchModel.getElementAt(SearchList.getSelectedIndex());
+            PackageFriendRequest request = new PackageFriendRequest(client.client_id,
+                    ((ChatUser) obj.getUser()).getId());
+            request.setRequest(true);
+            client.sendObject(request);
         }
     }//GEN-LAST:event_btnAddContactsActionPerformed
 
     private void TabbedPanelStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_TabbedPanelStateChanged
-        if (TabbedPanel.getSelectedIndex() == 1) {
-            AddBtnPanel.setVisible(true);
+        if (TabbedPanel.getSelectedIndex() != 0) {
+            btnAddContacts.setVisible(true);
+        } else {
+            btnAddContacts.setVisible(false);
         }
-        else {
-            AddBtnPanel.setVisible(false);
+
+        if (TabbedPanel.getSelectedIndex() == 2) {
+            btnGroupFunction.setVisible(true);
+        } else {
+            btnGroupFunction.setVisible(false);
         }
     }//GEN-LAST:event_TabbedPanelStateChanged
+
+    private void btnCreateGroupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCreateGroupActionPerformed
+        String groupName = JOptionPane.showInputDialog("Please choose your group name");
+        if (groupName != null) {
+            PackageGroupConversation pkg = new PackageGroupConversation();
+            pkg.setAction("CREATE");
+            pkg.setName(groupName);
+            pkg.setId_sender(client.client_id);
+            client.sendObject(pkg);
+        }
+    }//GEN-LAST:event_btnCreateGroupActionPerformed
+
+    private void btnGroupFunctionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGroupFunctionActionPerformed
+        //if (GroupList.getSelectedIndex() != -1) {
+        PopupSetting.show(btnGroupFunction,
+                btnGroupFunction.getX(),
+                btnGroupFunction.getY() + btnGroupFunction.getHeight() / 2 + 5);
+        //}
+    }//GEN-LAST:event_btnGroupFunctionActionPerformed
+
+    private void iViewMembersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iViewMembersActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_iViewMembersActionPerformed
+
+    private void iRenameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iRenameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_iRenameActionPerformed
+
+    private void iKickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iKickActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_iKickActionPerformed
+
+    private void iLeaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iLeaveActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_iLeaveActionPerformed
+
+    private void PendingListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_PendingListValueChanged
+        if (PendingList.getSelectedIndex() != -1) {
+            ImageJPanel obj = (ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex());
+            int friend_id = ((ChatUser) obj.getUser()).getId();
+
+            setConversation(client.pCon.get(String.valueOf(friend_id)));
+        }
+    }//GEN-LAST:event_PendingListValueChanged
+
+    private void GroupListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_GroupListValueChanged
+        if (GroupList.getSelectedIndex() != -1) {
+            ImageJPanel obj = (ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex());
+            String id = ((GroupConversation) obj.getUser()).getId_con();
+
+            setConversation(client.grCon.get(String.valueOf(id)));
+        }
+    }//GEN-LAST:event_GroupListValueChanged
+
+    private void btnAddToGroupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddToGroupActionPerformed
+        if (AddList.getSelectedIndex() != -1) {            
+            PackageGroupConversation pkg = new PackageGroupConversation();
+            pkg.setAction("ADD");
+            
+            ImageJPanel gPane = (ImageJPanel)groupModel.getElementAt(GroupList.getSelectedIndex());
+            ImageJPanel aPane = (ImageJPanel)addModel.getElementAt(AddList.getSelectedIndex());
+            
+            pkg.setId_con(((GroupConversation)gPane.getUser()).getId_con());
+            pkg.setId_sender(client.client_id);
+            pkg.setId_receiver(((ChatUser)aPane.getUser()).getId());
+            
+            client.sendObject(pkg);
+            addModel.remove(AddList.getSelectedIndex());
+        }
+    }//GEN-LAST:event_btnAddToGroupActionPerformed
 
     /**
      * @param args the command line arguments
@@ -907,10 +1175,8 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                int portNumber = 2833;
-                String serverAddress = "localhost";
-                new ClientGUI(serverAddress, portNumber).setVisible(true);
+            public void run() {           
+                new ClientGUI().setVisible(true);
             }
         });
     }
@@ -918,7 +1184,8 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel ActionPane;
     private javax.swing.JPanel Actions;
-    private javax.swing.JPanel AddBtnPanel;
+    private javax.swing.JList<String> AddList;
+    private javax.swing.JPanel AddToGroupPanel;
     private javax.swing.JTextPane ChatArea;
     private javax.swing.JPanel ContactInfoPanel;
     private javax.swing.JPanel FramePanel;
@@ -935,6 +1202,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JPanel MainScreen;
     private javax.swing.JPanel Members;
     private javax.swing.JList<String> PendingList;
+    private javax.swing.JPopupMenu PopupSetting;
     private javax.swing.JPanel RightFrame;
     private javax.swing.JList<String> SearchList;
     private javax.swing.JPanel SearchPanel;
@@ -943,8 +1211,10 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JPanel StatusPane;
     private javax.swing.JTabbedPane TabbedPanel;
     private javax.swing.JButton btnAddContacts;
+    private javax.swing.JButton btnAddToGroup;
     private javax.swing.JButton btnCreateGroup;
     private javax.swing.JButton btnFile;
+    private javax.swing.JButton btnGroupFunction;
     private javax.swing.JButton btnImage;
     private javax.swing.JButton btnLogin;
     private javax.swing.JButton btnLogout;
@@ -954,17 +1224,25 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JButton btnSend;
     private javax.swing.JButton btnStream;
     private javax.swing.JComboBox<String> cbStatus;
+    private javax.swing.JMenuItem iKick;
+    private javax.swing.JMenuItem iLeave;
+    private javax.swing.JMenuItem iRename;
+    private javax.swing.JMenuItem iViewMembers;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JSplitPane jSplitPane2;
     private javax.swing.JLabel lblLogo;
     private javax.swing.JLabel lblPassword;
     private javax.swing.JLabel lblUsername;
     private javax.swing.JLabel lblYourAvatar;
     private javax.swing.JLabel lblYourName;
+    private javax.swing.JTextField txtAddress;
     private javax.swing.JTextField txtInput;
     private javax.swing.JPasswordField txtPassword;
     private javax.swing.JTextField txtSearch;

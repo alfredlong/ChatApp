@@ -17,6 +17,15 @@ public class PackageMessage extends ChatPackage {
     String id_con;
     int sender;
     int receiver;
+    boolean groupMessage;
+
+    public boolean isGroupMessage() {
+        return groupMessage;
+    }
+
+    public void setGroupMessage(boolean groupMessage) {
+        this.groupMessage = groupMessage;
+    }
 
     public int getSender() {
         return sender;
@@ -54,6 +63,15 @@ public class PackageMessage extends ChatPackage {
         this.type = "MESSAGE";
         this.sender = sender;
         this.receiver = receiver;
+        this.groupMessage = false;
+        message = new ChatMessage(sender, text);
+    }
+    
+    public PackageMessage(int sender, String id_con, String text) {
+        this.type = "MESSAGE";
+        this.sender = sender;
+        this.groupMessage = true;
+        this.id_con = id_con;
         message = new ChatMessage(sender, text);
     }
 }
