@@ -60,30 +60,18 @@ public class ClientGUI extends javax.swing.JFrame {
     }
 
     public void addToGroup(String id, ChatUser newMem) {
-        client.groupConversations.get(id).getList_user().add(newMem);
+        //client.groupConversations.get(id).getList_user().add(newMem);
+        PackageGroupConversation conver = new PackageGroupConversation();
+        conver.setAction("CONVERSATION");
+        conver.setId_sender(client.client_id);
+        client.sendObject(conver);
     }
 
     public void kickOutGroup(String idCon, int idUser) {
-        for (int i = 0; i < client.groupConversations.get(idCon).getList_user().size(); i++) {
-            if (client.groupConversations.get(idCon).getList_user().get(i).getId() == idUser) {
-                client.groupConversations.get(idCon).getList_user().remove(i);
-            }
-        }
-
-        for (int i = 0; i < groupModel.getSize(); i++) {
-            ImageJPanel pane = (ImageJPanel) groupModel.getElementAt(i);
-            GroupConversation group = (GroupConversation) pane.getUser();
-            if (group.getId_con().equals(idCon)) {
-                String imgPath = "/chatapp/res/group.png";
-                for (ChatUser u : group.getList_user()) {
-                    if (u.getId() == idUser) {
-                        group.getList_user().remove(u);
-                        break;
-                    }
-                }
-                groupModel.setElementAt(new ImageJPanel(group.getName(), imgPath, group), i);
-            }
-        }
+        PackageGroupConversation conver = new PackageGroupConversation();
+        conver.setAction("CONVERSATION");
+        conver.setId_sender(client.client_id);
+        client.sendObject(conver);
     }
 
     public void leaveGroup(String idCon, int idUser) {
@@ -158,7 +146,7 @@ public class ClientGUI extends javax.swing.JFrame {
     }
 
     public String getSelectingGroup() {
-        return ((GroupConversation) ((ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex())).getUser())
+        return ((GroupConversation) ((ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex())).getUser())
                 .getId_con();
     }
 
@@ -879,6 +867,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         StyledDocument document = (StyledDocument) ChatArea.getDocument();
         try {
             document.insertString(document.getLength(), str, null);
+            ChatArea.setCaretPosition(document.getLength());
         } catch (BadLocationException ex) {
             Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -926,14 +915,40 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     }
 
     int friendReqOption(Object[] options, PackageFriendRequest request) {
-        return JOptionPane.showOptionDialog(this,
-                "You have friend request",
+        int ans = JOptionPane.showOptionDialog(this,
+                "You have friend request from " + request.getUser().getUsername(),
                 "Friend request",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
                 options,
                 options[1]);
+
+        if (ans == 0) {
+            String imgPath = "";
+            if (request.getUser().isOnline()) {
+                switch (request.getUser().getStatus()) {
+                    case "ONLINE":
+                        imgPath = "/chatapp/res/awake.png";
+                        break;
+                    case "AWAY":
+                        imgPath = "/chatapp/res/away.png";
+                        break;
+                    case "BUSY":
+                        imgPath = "/chatapp/res/busy.png";
+                        break;
+                    case "HIDDEN":
+                    case "OFFLINE":
+                        imgPath = "/chatapp/res/sleep.png";
+                        break;
+                }
+            } else {
+                imgPath = "/chatapp/res/sleep.png";
+            }
+            friendModel.addElement(new ImageJPanel(request.getUser().getUsername(), imgPath, request.getUser()));
+        }
+
+        return ans;
     }
 
     void showDialog(String str) {
@@ -1041,9 +1056,9 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
                 && PendingList.getSelectedIndex() == -1
                 && GroupList.getSelectedIndex() == -1)) {
             if (txtInput.getText().length() != 0) {
-                append(client.client_username + ": " + txtInput.getText() + "\n");
                 if (connected) {
                     if (pane != 2) {
+                        append(client.client_username + ": " + txtInput.getText() + "\n");
                         int friendId;
                         if (pane == 0) {
                             friendId = ((ChatUser) ((ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex()))
@@ -1065,11 +1080,12 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
                         String receiver = ((GroupConversation) (((ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex())).getUser()))
                                 .getId_con();
                         PackageMessage message = new PackageMessage(client.client_id, receiver, txtInput.getText());
+                        
                         client.sendObject(message);
 
-                        client.grCon.put(String.valueOf(receiver),
-                                client.grCon.get(String.valueOf(receiver))
-                                + String.valueOf(receiver) + ": " + txtInput.getText() + "\n");
+//                        client.grCon.put(String.valueOf(receiver),
+//                                client.grCon.get(String.valueOf(receiver))
+//                                + String.valueOf(receiver) + ": " + txtInput.getText() + "\n");
                     }
                 }
             }
@@ -1126,14 +1142,39 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         if (!isSearching) {
             if (TabbedPanel.getSelectedIndex() == 1) {
                 if (PendingList.getSelectedIndex() != -1) {
+                    ImageJPanel pane = (ImageJPanel)pendingModel.getElementAt(PendingList.getSelectedIndex());
+                    ChatUser pFriend = (ChatUser)pane.getUser();
                     PackageFriendRequest request = new PackageFriendRequest(client.client_id,
-                            client.pendingFriends.get(PendingList.getSelectedIndex()).getId());
+                            pFriend.getId());
                     request.setRequest(false);
                     request.setAccept(true);
                     client.sendObject(request);
 
-                    PackageFriendList friendList = new PackageFriendList();
-                    client.sendObject(friendList);
+                    //Add friend here
+                    String imgPath = "";
+                    if (pFriend.isOnline()) {
+                        switch (pFriend.getStatus()) {
+                            case "ONLINE":
+                                imgPath = "/chatapp/res/awake.png";
+                                break;
+                            case "AWAY":
+                                imgPath = "/chatapp/res/away.png";
+                                break;
+                            case "BUSY":
+                                imgPath = "/chatapp/res/busy.png";
+                                break;
+                            case "HIDDEN":
+                            case "OFFLINE":
+                                imgPath = "/chatapp/res/sleep.png";
+                                break;
+                        }
+                    } else {
+                        imgPath = "/chatapp/res/sleep.png";
+                    }
+                    friendModel.addElement(new ImageJPanel(pFriend.getUsername(), imgPath, pFriend));
+                    
+                    client.pendingFriends.remove(String.valueOf(pFriend.getId()));
+                    pendingModel.removeElementAt(PendingList.getSelectedIndex());
                 }
             } else if (GroupList.getSelectedIndex() != -1) {
                 JFrame frame = new JFrame();

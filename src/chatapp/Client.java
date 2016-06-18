@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.*;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -103,7 +104,7 @@ public class Client {
         friends = new HashMap<>();
         pendingFriends = new HashMap<>();
         groupConversations = new HashMap<>();
-        
+
         try {
             socket = new Socket(server, port);
         } catch (IOException ex) {
@@ -234,23 +235,23 @@ public class Client {
     private void PackageFriendListProcess(ChatPackage inputPackage) {
         friends.clear();
         pendingFriends.clear();
-        
+
         PackageFriendList friendList = (PackageFriendList) inputPackage;
         ArrayList<ChatUser> f = friendList.getFriends();
         ArrayList<ChatUser> pf = friendList.getPendingFriends();
-        
+
         for (ChatUser u : f) {
             friends.put(String.valueOf(u.getId()), u);
-            
+
             PackageConversation conversation = new PackageConversation();
             conversation.setId_userA(client_id);
             conversation.setId_userB(u.getId());
             sendObject(conversation);
-        } 
-        
+        }
+
         for (ChatUser u : pf) {
             pendingFriends.put(String.valueOf(u.getId()), u);
-            
+
             PackageConversation conversation = new PackageConversation();
             conversation.setId_userA(client_id);
             conversation.setId_userB(u.getId());
@@ -258,7 +259,7 @@ public class Client {
         }
 
         cg.initFriendList();
-        
+
         PackageGroupConversation conver = new PackageGroupConversation();
         conver.setAction("CONVERSATION");
         conver.setId_sender(client_id);
@@ -272,11 +273,12 @@ public class Client {
         String text = "";
         for (int i = 0; i < conversation.size(); i++) {
             String name = "";
-            if (conversation.get(i).getSender() != client_id)
+            if (conversation.get(i).getSender() != client_id) {
                 name = friends.get(String.valueOf(conversation.get(i).getSender()))
-                    .getUsername();
-            else
+                        .getUsername();
+            } else {
                 name = client_username;
+            }
             text += name + ": " + conversation.get(i).getContent() + "\n";
         }
 
@@ -309,7 +311,7 @@ public class Client {
         } else if (request.isAccept()) {
             PackageFriendList friendList = new PackageFriendList();
             sendObject(friendList);
-            
+
             cg.showDialog("FRIEND REQUEST ACCEPTED");
         } //do something like add the friend to the list
     }
@@ -323,32 +325,43 @@ public class Client {
         PackageMessage message = (PackageMessage) inputPackage;
 
         String text = "";
-        if (message.getReceiver() == client_id) {
-            String senderName = friends.get(String.valueOf(message.getSender())).getUsername();
-            if (senderName == null)
-                senderName = pendingFriends.get(String.valueOf(message.getSender())).getUsername();
-            
-            text += senderName + ": " + message.getMessage().getContent() + "\n";
-        }
-
-        if (cg.getSelectingTab() == 0) {
-            if (cg.getSelectingFriend() == message.getSender()) {
-                cg.append(text);
-            }
-        } else if (cg.getSelectingTab() == 1) {
-            if (cg.getSelectingPendingFriend() == message.getSender()) {
-                cg.append(text);
-            }
-        } else if (cg.getSelectingGroup() == message.getId_con()) {
-            cg.append(text);
-        }
-
         if (!message.isGroupMessage()) {
-            pCon.put(String.valueOf(message.getSender()),
-                    pCon.get(String.valueOf(message.getSender())) + text);
-        } else {
+            if (message.getReceiver() == client_id) { 
+                String senderName = friends.get(String.valueOf(message.getSender())).getUsername();
+                if (senderName == null) {
+                    senderName = pendingFriends.get(String.valueOf(message.getSender())).getUsername();
+                }
+
+                text += senderName + ": " + message.getMessage().getContent() + "\n";
+                if (cg.getSelectingTab() == 0) {
+                    if (cg.getSelectingFriend() == message.getSender()) {
+                        cg.append(text);
+                    }
+                } else if (cg.getSelectingTab() == 1) {
+                    if (cg.getSelectingPendingFriend() == message.getSender()) {
+                        cg.append(text);
+                    }
+                }
+
+                pCon.put(String.valueOf(message.getSender()),
+                        pCon.get(String.valueOf(message.getSender())) + text);
+            }
+        } 
+        else { 
+            String senderName = "Unknown";
+            for (ChatUser u : groupConversations.get(message.getId_con()).getList_user()) {
+                if (message.getSender() == u.getId()) {
+                    senderName = u.getUsername();
+                    break;
+                }
+            }
+           
+            text += senderName + ": " + message.getMessage().getContent() + "\n";
+            if (cg.getSelectingTab() == 2 && message.getId_con().equals(cg.getSelectingGroup())) {
+                cg.append(text);
+            }
             grCon.put(String.valueOf(message.getId_con()),
-                    grCon.get(String.valueOf(message.getId_con())) + text);
+                grCon.get(String.valueOf(message.getId_con())) + text);
         }
     }
 
@@ -361,12 +374,12 @@ public class Client {
                 for (GroupConversation cv : convers) {
                     groupConversations.put(cv.getId_con(), cv);
                 }
-                
+
                 for (GroupConversation gr : convers) {
                     String text = "";
 
                     for (ChatMessage msg : gr.getConversation()) {
-                        String name = "";
+                        String name = "Unknown";
                         for (ChatUser user : gr.getList_user()) {
                             if (msg.getSender() == user.getId()) {
                                 name = user.getUsername();
@@ -379,7 +392,7 @@ public class Client {
                 }
                 cg.initGroups();
                 break;
-            case "CREATE":            
+            case "CREATE":
                 GroupConversation gr = new GroupConversation();
                 gr.setId_con(conver.getId_con());
                 gr.setName(conver.getName());

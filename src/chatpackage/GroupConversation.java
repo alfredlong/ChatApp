@@ -72,7 +72,7 @@ public class GroupConversation implements Serializable {
     private int id_master;
     
     public GroupConversation() {
-        this.list_user = new ArrayList();
+        
     }
     
 }
