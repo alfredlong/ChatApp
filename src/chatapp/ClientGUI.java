@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.ListCellRenderer;
@@ -54,6 +55,52 @@ public class ClientGUI extends javax.swing.JFrame {
                 .getResource(path))
                 .getImage()
                 .getScaledInstance(width, height, Image.SCALE_SMOOTH));
+    }
+
+    public void addToGroup(String id, ChatUser newMem) {
+        client.groupConversations.get(id).getList_user().add(newMem);
+    }
+
+    public void kickOutGroup(String idCon, int idUser) {
+        for (int i = 0; i < client.groupConversations.get(idCon).getList_user().size(); i++) {
+            if (client.groupConversations.get(idCon).getList_user().get(i).getId() == idUser) {
+                client.groupConversations.get(idCon).getList_user().remove(i);
+            }
+        }
+    }
+
+    public void leaveGroup(String idCon, int idUser) {
+        if (idUser != client.client_id) {
+            for (int i = 0; i < client.groupConversations.get(idCon).getList_user().size(); i++) {
+                if (client.groupConversations.get(idCon).getList_user().get(i).getId() == idUser) {
+                    client.groupConversations.get(idCon).getList_user().remove(i);
+                }
+            }
+        }
+    }
+
+    public void deleteGroup(String idCon) {
+        for (int i = 0; i < groupModel.getSize(); i++) {
+            ImageJPanel pane = (ImageJPanel) groupModel.getElementAt(i);
+            GroupConversation group = (GroupConversation) pane.getUser();
+            if (group.getId_con() == idCon) {
+                groupModel.remove(i);
+            }
+        }
+        client.groupConversations.remove(idCon);
+    }
+
+    public void renameGroup(String idCon, String name) {
+        for (int i = 0; i < groupModel.getSize(); i++) {
+            ImageJPanel pane = (ImageJPanel) groupModel.getElementAt(i);
+            GroupConversation group = (GroupConversation) pane.getUser();
+            if (group.getId_con() == idCon) {
+                String imgPath = "/chatapp/res/group.png";
+                group.setName(name);
+                groupModel.addElement(new ImageJPanel(name, imgPath, group));
+            }
+        }
+        client.groupConversations.get(idCon).setName(name);
     }
 
     public int getSelectingTab() {
@@ -860,11 +907,12 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
         if (checkValid(username, password)) {
             String host = "";
-            if (txtAddress.getText() != "")
+            if (txtAddress.getText() != "") {
                 host = txtAddress.getText();
-            else
+            } else {
                 host = defaultHost;
-                
+            }
+
             lblYourName.setText(username);
             connected = true;
             client = new Client(host, defaultPort, username, password, this);
@@ -1008,8 +1056,12 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
                     PackageFriendList friendList = new PackageFriendList();
                     client.sendObject(friendList);
                 }
-            } else if (GroupList.getSelectedIndex() != -1) {
+            } else if (GroupList.getSelectedIndex() != -1) {               
                 JFrame frame = new JFrame();
+
+                ImageJPanel pane = (ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex());
+                GroupConversation obj = (GroupConversation) pane.getUser();
+                String groupId = obj.getId_con();
 
                 addModel = new DefaultListModel();
 
@@ -1034,7 +1086,17 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
                     } else {
                         imgPath = "/chatapp/res/sleep.png";
                     }
-                    addModel.addElement(new ImageJPanel(entry.getValue().getUsername(), imgPath, entry.getValue()));
+
+                    boolean isExisted = false;
+                    for (ChatUser u : client.groupConversations.get(groupId).getList_user()) {
+                        if (entry.getValue().getId() == u.getId()) {
+                            isExisted = true;
+                            break;
+                        }
+                    }
+                    if (!isExisted) {
+                        addModel.addElement(new ImageJPanel(entry.getValue().getUsername(), imgPath, entry.getValue()));
+                    }
                 }
 
                 AddList.setModel(addModel);
@@ -1081,15 +1143,32 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     }//GEN-LAST:event_btnCreateGroupActionPerformed
 
     private void btnGroupFunctionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGroupFunctionActionPerformed
-        //if (GroupList.getSelectedIndex() != -1) {
-        PopupSetting.show(btnGroupFunction,
-                btnGroupFunction.getX(),
-                btnGroupFunction.getY() + btnGroupFunction.getHeight() / 2 + 5);
-        //}
+        if (GroupList.getSelectedIndex() != -1) {
+            PopupSetting.show(btnGroupFunction,
+                    btnGroupFunction.getX(),
+                    btnGroupFunction.getY() + btnGroupFunction.getHeight() / 2 + 5);
+        }
     }//GEN-LAST:event_btnGroupFunctionActionPerformed
 
     private void iViewMembersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iViewMembersActionPerformed
-        // TODO add your handling code here:
+        JFrame frame = new JFrame();
+        
+        JList list = new JList();
+        DefaultListModel model = new DefaultListModel();
+        
+        ImageJPanel pane = (ImageJPanel)groupModel.getElementAt(GroupList.getSelectedIndex());
+        ArrayList<ChatUser> members = ((GroupConversation)pane.getUser()).getList_user();
+                
+        for (ChatUser u : members) {
+            model.addElement(u.getUsername());
+        }
+        
+        list.setModel(model);
+        
+        frame.add(list);
+        frame.setTitle("Members");
+        frame.setMinimumSize(new Dimension(200, 300));
+        frame.setVisible(true);
     }//GEN-LAST:event_iViewMembersActionPerformed
 
     private void iRenameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iRenameActionPerformed
@@ -1123,19 +1202,24 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     }//GEN-LAST:event_GroupListValueChanged
 
     private void btnAddToGroupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddToGroupActionPerformed
-        if (AddList.getSelectedIndex() != -1) {            
+        if (AddList.getSelectedIndex() != -1) {
             PackageGroupConversation pkg = new PackageGroupConversation();
-            pkg.setAction("ADD");
             
-            ImageJPanel gPane = (ImageJPanel)groupModel.getElementAt(GroupList.getSelectedIndex());
-            ImageJPanel aPane = (ImageJPanel)addModel.getElementAt(AddList.getSelectedIndex());
-            
-            pkg.setId_con(((GroupConversation)gPane.getUser()).getId_con());
+            ImageJPanel gPane = (ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex());
+            ImageJPanel aPane = (ImageJPanel) addModel.getElementAt(AddList.getSelectedIndex());
+
+            pkg.setId_con(((GroupConversation) gPane.getUser()).getId_con());
             pkg.setId_sender(client.client_id);
-            pkg.setId_receiver(((ChatUser)aPane.getUser()).getId());
-            
+            pkg.setId_receiver(((ChatUser) aPane.getUser()).getId());
+
             client.sendObject(pkg);
             addModel.remove(AddList.getSelectedIndex());
+            
+            GroupConversation group = (GroupConversation)gPane.getUser();
+            group.getList_user().add((ChatUser) aPane.getUser());
+            
+            String imgPath = "/chatapp/res/group.png";
+            groupModel.setElementAt(new ImageJPanel(group.getName(), imgPath, group), GroupList.getSelectedIndex());
         }
     }//GEN-LAST:event_btnAddToGroupActionPerformed
 
@@ -1175,7 +1259,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {           
+            public void run() {
                 new ClientGUI().setVisible(true);
             }
         });

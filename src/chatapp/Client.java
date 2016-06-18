@@ -261,6 +261,7 @@ public class Client {
         
         PackageGroupConversation conver = new PackageGroupConversation();
         conver.setAction("CONVERSATION");
+        conver.setId_sender(client_id);
         sendObject(conver);
     }
 
@@ -382,22 +383,21 @@ public class Client {
                 cg.addGroup(conver.getId_con(), conver.getName());
                 break;
             case "RENAME":
-                
+                cg.renameGroup(conver.getId_con(), conver.getName());
                 break;
             case "ADD":
-                //cg.addToModel();
+                cg.addToGroup(conver.getId_con(), conver.getUser());
                 break;
             case "KICK":
-               
+                cg.kickOutGroup(conver.getId_con(), conver.getId_receiver());
                 break;
             case "LEAVE":
-               
+                cg.leaveGroup(conver.getId_con(), conver.getId_sender());
                 break;
-            case "PASS_MASTER":
-              
-                break;
+//            case "PASS_MASTER":
+//                break;
             case "DELETE":
-               
+                cg.deleteGroup(conver.getId_con());
                 break;
         }
     }
