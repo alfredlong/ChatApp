@@ -309,13 +309,13 @@ public class Client {
         } else if (request.isAccept()) {
             PackageFriendList friendList = new PackageFriendList();
             sendObject(friendList);
+            
             cg.showDialog("FRIEND REQUEST ACCEPTED");
         } //do something like add the friend to the list
     }
 
     private void PackageStatusProcess(ChatPackage inputPackage) {
         PackageStatus status = (PackageStatus) inputPackage;
-        cg.showDialog("FRIEND IS " + status.getStatus());
         cg.updateFriendStatus(status.getId(), status.getStatus());
     }
 
@@ -353,10 +353,10 @@ public class Client {
     }
 
     private void PackageGroupConversationProcess(ChatPackage inputPackage) {
-        groupConversations.clear();
         PackageGroupConversation conver = (PackageGroupConversation) inputPackage;
         switch (conver.getAction()) {
             case "CONVERSATION":
+                groupConversations.clear();
                 ArrayList<GroupConversation> convers = conver.getList_con();
                 for (GroupConversation cv : convers) {
                     groupConversations.put(cv.getId_con(), cv);
@@ -380,7 +380,12 @@ public class Client {
                 cg.initGroups();
                 break;
             case "CREATE":            
-                cg.addGroup(conver.getId_con(), conver.getName());
+                GroupConversation gr = new GroupConversation();
+                gr.setId_con(conver.getId_con());
+                gr.setName(conver.getName());
+                gr.setId_master(conver.getId_sender());
+                groupConversations.put(conver.getId_con(), gr);
+                cg.addGroup(gr);
                 break;
             case "RENAME":
                 cg.renameGroup(conver.getId_con(), conver.getName());
