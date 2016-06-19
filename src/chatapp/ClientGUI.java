@@ -14,18 +14,23 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.ListCellRenderer;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
 
@@ -276,6 +281,9 @@ public class ClientGUI extends javax.swing.JFrame {
         jScrollPane7 = new javax.swing.JScrollPane();
         RemoveList = new javax.swing.JList<>();
         btnRemoveFromGroup = new javax.swing.JButton();
+        DelMenu = new javax.swing.JPopupMenu();
+        iDelContact = new javax.swing.JMenuItem();
+        iClear = new javax.swing.JMenuItem();
         FramePanel = new javax.swing.JPanel();
         LoginScreen = new javax.swing.JPanel();
         LogoPanel = new javax.swing.JPanel();
@@ -320,6 +328,7 @@ public class ClientGUI extends javax.swing.JFrame {
         Actions = new javax.swing.JPanel();
         btnGroupFunction = new javax.swing.JButton();
         btnAddContacts = new javax.swing.JButton();
+        btnDelContacts = new javax.swing.JButton();
         btnStream = new javax.swing.JButton();
         btnCreateGroup = new javax.swing.JButton();
         btnLogout = new javax.swing.JButton();
@@ -415,6 +424,22 @@ public class ClientGUI extends javax.swing.JFrame {
             }
         });
         RemoveFromGroupPanel.add(btnRemoveFromGroup, java.awt.BorderLayout.PAGE_END);
+
+        iDelContact.setText("Delete contact");
+        iDelContact.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                iDelContactActionPerformed(evt);
+            }
+        });
+        DelMenu.add(iDelContact);
+
+        iClear.setText("Clear history");
+        iClear.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                iClearActionPerformed(evt);
+            }
+        });
+        DelMenu.add(iClear);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Live Chat!");
@@ -744,6 +769,23 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     });
     Actions.add(btnAddContacts);
 
+    btnDelContacts.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
+        .getResource("/chatapp/res/delete.png"))
+    .getImage()
+    .getScaledInstance(25, 25, Image.SCALE_SMOOTH)));
+    btnDelContacts.setBorder(null);
+    btnDelContacts.setBorderPainted(false);
+    btnDelContacts.setMaximumSize(new java.awt.Dimension(50, 50));
+    btnDelContacts.setMinimumSize(new java.awt.Dimension(50, 50));
+    btnDelContacts.setOpaque(false);
+    btnDelContacts.setPreferredSize(new java.awt.Dimension(50, 50));
+    btnDelContacts.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnDelContactsActionPerformed(evt);
+        }
+    });
+    Actions.add(btnDelContacts);
+
     btnStream.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
         .getResource("/chatapp/res/video-chat.png"))
     .getImage()
@@ -825,6 +867,11 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     btnImage.setMaximumSize(new java.awt.Dimension(35, 27));
     btnImage.setMinimumSize(new java.awt.Dimension(35, 27));
     btnImage.setPreferredSize(new java.awt.Dimension(35, 27));
+    btnImage.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+            btnImageActionPerformed(evt);
+        }
+    });
     SendFuncs.add(btnImage);
 
     btnSend.setIcon(new javax.swing.ImageIcon(new javax.swing.ImageIcon(getClass()
@@ -1075,12 +1122,12 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
                         client.pCon.put(String.valueOf(friendId),
                                 client.pCon.get(String.valueOf(friendId))
-                                + String.valueOf(friendId) + ": " + txtInput.getText() + "\n");
+                                + client.client_username + ": " + txtInput.getText() + "\n");
                     } else {
                         String receiver = ((GroupConversation) (((ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex())).getUser()))
                                 .getId_con();
                         PackageMessage message = new PackageMessage(client.client_id, receiver, txtInput.getText());
-                        
+
                         client.sendObject(message);
 
 //                        client.grCon.put(String.valueOf(receiver),
@@ -1142,10 +1189,10 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         if (!isSearching) {
             if (TabbedPanel.getSelectedIndex() == 1) {
                 if (PendingList.getSelectedIndex() != -1) {
-                    ImageJPanel pane = (ImageJPanel)pendingModel.getElementAt(PendingList.getSelectedIndex());
-                    ChatUser pFriend = (ChatUser)pane.getUser();
-                    PackageFriendRequest request = new PackageFriendRequest(client.client_id,
-                            pFriend.getId());
+                    ImageJPanel pane = (ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex());
+                    ChatUser pFriend = (ChatUser) pane.getUser();
+                    PackageFriendRequest request = new PackageFriendRequest(pFriend.getId(),
+                            client.client_id);
                     request.setRequest(false);
                     request.setAccept(true);
                     client.sendObject(request);
@@ -1172,7 +1219,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
                         imgPath = "/chatapp/res/sleep.png";
                     }
                     friendModel.addElement(new ImageJPanel(pFriend.getUsername(), imgPath, pFriend));
-                    
+
                     client.pendingFriends.remove(String.valueOf(pFriend.getId()));
                     pendingModel.removeElementAt(PendingList.getSelectedIndex());
                 }
@@ -1250,8 +1297,10 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
 
         if (TabbedPanel.getSelectedIndex() == 2) {
             btnGroupFunction.setVisible(true);
+            btnDelContacts.setVisible(false);
         } else {
             btnGroupFunction.setVisible(false);
+            btnDelContacts.setVisible(true);
         }
     }//GEN-LAST:event_TabbedPanelStateChanged
 
@@ -1452,6 +1501,105 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
         // TODO add your handling code here:
     }//GEN-LAST:event_btnStreamActionPerformed
 
+    private void btnImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImageActionPerformed
+        int tabId = TabbedPanel.getSelectedIndex();
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Image Files", "jpg", "png", "gif", "jpeg");
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(filter);
+
+        if (tabId == 2) {
+            if (GroupList.getSelectedIndex() != -1) {
+                int returnVal = chooser.showOpenDialog(this);
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    try {
+                        BufferedImage image = ImageIO.read(file);
+
+                        ImageJPanel pane = (ImageJPanel) groupModel.getElementAt(GroupList.getSelectedIndex());
+                        GroupConversation group = (GroupConversation) pane.getUser();
+
+                        PackageImage pkg = new PackageImage(client.client_id, group.getId_con(), image);
+                        client.sendObject(pkg);
+                    } catch (IOException ex) {
+                        Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        } else {
+            int friendId;
+            if (tabId == 0 && FriendList.getSelectedIndex() != -1) {
+                friendId = ((ChatUser) ((ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex()))
+                        .getUser())
+                        .getId();
+            } else if (tabId == 1 && PendingList.getSelectedIndex() != -1) {
+                friendId = ((ChatUser) ((ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex()))
+                        .getUser())
+                        .getId();
+            }
+
+            int returnVal = chooser.showOpenDialog(this);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+                try {
+                    BufferedImage image = ImageIO.read(file);
+
+//                        PackageImage pkg = new PackageImage(client.client_id, group.getId_con(), image);
+//                        client.sendObject(pkg);
+                } catch (IOException ex) {
+                    Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }//GEN-LAST:event_btnImageActionPerformed
+
+    private void btnDelContactsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelContactsActionPerformed
+        DelMenu.show(btnDelContacts,
+                btnDelContacts.getX(),
+                btnDelContacts.getY() + btnDelContacts.getHeight() / 2 + 5);
+    }//GEN-LAST:event_btnDelContactsActionPerformed
+
+    private void iDelContactActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iDelContactActionPerformed
+        int idPane = TabbedPanel.getSelectedIndex();
+        if (idPane == 0 && FriendList.getSelectedIndex() != -1) {
+            ImageJPanel pane = (ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex());
+            ChatUser user = (ChatUser) pane.getUser();
+
+            PackageFriendDelete pkg = new PackageFriendDelete(client.client_id, user.getId());
+            client.sendObject(pkg);
+        }
+        if (idPane == 1 && PendingList.getSelectedIndex() != -1) {
+            ImageJPanel pane = (ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex());
+            ChatUser pFriend = (ChatUser) pane.getUser();
+            PackageFriendRequest request = new PackageFriendRequest(client.client_id,
+                    pFriend.getId());
+            request.setRequest(false);
+            request.setAccept(false);
+            client.sendObject(request);
+
+            client.pendingFriends.remove(String.valueOf(pFriend.getId()));
+            pendingModel.removeElementAt(PendingList.getSelectedIndex());
+        }
+    }//GEN-LAST:event_iDelContactActionPerformed
+
+    private void iClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_iClearActionPerformed
+        int idPane = TabbedPanel.getSelectedIndex();
+        if (idPane == 0 && FriendList.getSelectedIndex() != -1) {
+            ImageJPanel pane = (ImageJPanel) friendModel.getElementAt(FriendList.getSelectedIndex());
+            ChatUser user = (ChatUser) pane.getUser();
+
+            PackageClearConversation pkg = new PackageClearConversation(client.client_id, user.getId(), client.id_con);
+            client.sendObject(pkg);
+        }
+        if (idPane == 1 && PendingList.getSelectedIndex() != -1) {
+            ImageJPanel pane = (ImageJPanel) pendingModel.getElementAt(PendingList.getSelectedIndex());
+            ChatUser pFriend = (ChatUser) pane.getUser();
+            
+            PackageClearConversation pkg = new PackageClearConversation(client.client_id, pFriend.getId(), client.id_con);
+            client.sendObject(pkg);
+        }
+       
+    }//GEN-LAST:event_iClearActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1501,6 +1649,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JPanel AddToGroupPanel;
     private javax.swing.JTextPane ChatArea;
     private javax.swing.JPanel ContactInfoPanel;
+    private javax.swing.JPopupMenu DelMenu;
     private javax.swing.JPanel FramePanel;
     private javax.swing.JList<String> FriendList;
     private javax.swing.JList<String> GroupList;
@@ -1528,6 +1677,7 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JButton btnAddContacts;
     private javax.swing.JButton btnAddToGroup;
     private javax.swing.JButton btnCreateGroup;
+    private javax.swing.JButton btnDelContacts;
     private javax.swing.JButton btnFile;
     private javax.swing.JButton btnGroupFunction;
     private javax.swing.JButton btnImage;
@@ -1540,6 +1690,8 @@ btnSearch.addActionListener(new java.awt.event.ActionListener() {
     private javax.swing.JButton btnSend;
     private javax.swing.JButton btnStream;
     private javax.swing.JComboBox<String> cbStatus;
+    private javax.swing.JMenuItem iClear;
+    private javax.swing.JMenuItem iDelContact;
     private javax.swing.JMenuItem iDelete;
     private javax.swing.JMenuItem iKick;
     private javax.swing.JMenuItem iLeave;

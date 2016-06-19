@@ -141,6 +141,23 @@ public class Client {
         }
     }
 
+    private void PackageFriendDelProcess(ChatPackage inputPackage) {
+        PackageFriendList friendList = new PackageFriendList();
+        sendObject(friendList);
+    }
+
+    private void PackageClearProcess(ChatPackage inputPackage) {
+        PackageClearConversation pkg = (PackageClearConversation)inputPackage;
+        int friendId = pkg.getSender() == client_id ? pkg.getReceiver() : pkg.getSender();
+        
+        PackageConversation conversation = new PackageConversation();
+        conversation.setId_userA(client_id);
+        conversation.setId_userB(friendId);
+        sendObject(conversation);
+
+        cg.setConversation("");
+    }
+
     class ListenFromServer implements Runnable {
 
         @Override
@@ -177,6 +194,9 @@ public class Client {
             case "FRIEND_REQUEST":
                 PackageFriendReqProcess(inputPackage);
                 break;
+            case "FRIEND_DELETE":
+                PackageFriendDelProcess(inputPackage);
+                break;
             case "FRIEND_LIST":
                 PackageFriendListProcess(inputPackage);
                 break;
@@ -192,10 +212,20 @@ public class Client {
             case "GROUP_CONVERSATION":
                 PackageGroupConversationProcess(inputPackage);
                 break;
+            case "IMAGE":
+                PackageImageProcess(inputPackage);
+                break;
+            case "CLEAR":
+                PackageClearProcess(inputPackage);
+                break;
             default:
                 break;
 
         }
+    }
+
+    private void PackageImageProcess(ChatPackage inputPackage) {
+
     }
 
     private void PackageLoginProcess(ChatPackage inputPackage) {
@@ -326,7 +356,7 @@ public class Client {
 
         String text = "";
         if (!message.isGroupMessage()) {
-            if (message.getReceiver() == client_id) { 
+            if (message.getReceiver() == client_id) {
                 String senderName = friends.get(String.valueOf(message.getSender())).getUsername();
                 if (senderName == null) {
                     senderName = pendingFriends.get(String.valueOf(message.getSender())).getUsername();
@@ -346,22 +376,21 @@ public class Client {
                 pCon.put(String.valueOf(message.getSender()),
                         pCon.get(String.valueOf(message.getSender())) + text);
             }
-        } 
-        else { 
-            String senderName = "Unknown";
+        } else {
+            String senderName = "[A lost soul]";
             for (ChatUser u : groupConversations.get(message.getId_con()).getList_user()) {
                 if (message.getSender() == u.getId()) {
                     senderName = u.getUsername();
                     break;
                 }
             }
-           
+
             text += senderName + ": " + message.getMessage().getContent() + "\n";
             if (cg.getSelectingTab() == 2 && message.getId_con().equals(cg.getSelectingGroup())) {
                 cg.append(text);
             }
             grCon.put(String.valueOf(message.getId_con()),
-                grCon.get(String.valueOf(message.getId_con())) + text);
+                    grCon.get(String.valueOf(message.getId_con())) + text);
         }
     }
 
@@ -379,7 +408,7 @@ public class Client {
                     String text = "";
 
                     for (ChatMessage msg : gr.getConversation()) {
-                        String name = "Unknown";
+                        String name = "[A lost soul]";
                         for (ChatUser user : gr.getList_user()) {
                             if (msg.getSender() == user.getId()) {
                                 name = user.getUsername();
